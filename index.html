@@ -66,7 +66,6 @@
             text-align: center;
         }
 
-        /* Termómetro / Progreso */
         .progress-container {
             margin: 10px 0;
             background: #333;
@@ -93,7 +92,6 @@
             color: #fff;
         }
 
-        /* Filas de tramos */
         .tramo-row {
             display: flex;
             align-items: center;
@@ -147,7 +145,6 @@
             margin: 6px 0;
         }
 
-        /* Desglose del Termómetro Semanal */
         .thermometer-day {
             display: flex;
             flex-direction: column;
@@ -218,8 +215,7 @@
             <div class="progress-text" id="progressPct">0%</div>
         </div>
 
-        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 5px;">
-            </div>
+        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 5px;"></div>
     </div>
 
     <div class="backup-zone">
@@ -231,6 +227,16 @@
 <script>
     const OBJETIVO_SEMANAL = 35;
     const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    
+    // SISTEMA DE RECUPERACIÓN AUTOMÁTICA
+    // Si existen datos de la versión v2 y no en la v3, los migramos al instante
+    let datosV2 = localStorage.getItem('registro_calendario_v2');
+    let datosV3 = localStorage.getItem('registro_calendario_v3');
+    
+    if (datosV2 && !datosV3) {
+        localStorage.setItem('registro_calendario_v3', datosV2);
+    }
+
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
 
     function establecerFechaDeHoy() {
@@ -324,7 +330,6 @@
     }
 
     function calcularMetricasYTermometro(fechaSeleccionada) {
-        // 1. Total del día seleccionado
         let minutosDiaSeleccionado = 0;
         if (baseDatos[fechaSeleccionada]) {
             baseDatos[fechaSeleccionada].forEach(t => {
@@ -335,7 +340,6 @@
         const mDia = minutosDiaSeleccionado % 60;
         document.getElementById('totalDia').innerText = `Total: ${hDia}h ${mDia.toString().padStart(2, '0')}m`;
 
-        // 2. Construcción del Termómetro Semanal Desglosado
         const { lunes, domingo } = obtenerLunesYDomingo(fechaSeleccionada);
         const desgloseContenedor = document.getElementById('desgloseSemanalContenedor');
         desgloseContenedor.innerHTML = '';
@@ -343,7 +347,6 @@
         let minutosTotalesSemana = 0;
         let diaBucle = new Date(lunes);
 
-        // Bucle de lunes a domingo
         for (let i = 0; i < 7; i++) {
             const ISOStr = diaBucle.toISOString().split('T')[0];
             const nombreDia = nombresDias[diaBucle.getDay()];
@@ -368,7 +371,6 @@
             const tDiaStr = minutosEsteDia > 0 ? `${hE}h ${mE.toString().padStart(2, '0')}m` : '0h';
             const tramosStr = textoTramos.length > 0 ? textoTramos.join(' | ') : 'Sin registros';
 
-            // Dibujar fila en el termómetro
             const divDia = document.createElement('div');
             divDia.className = 'thermometer-day';
             divDia.innerHTML = `
@@ -383,7 +385,6 @@
             diaBucle.setDate(diaBucle.getDate() + 1);
         }
 
-        // 3. Cálculos globales de la barra y el estado
         const hSem = Math.floor(minutosTotalesSemana / 60);
         const mSem = minutosTotalesSemana % 60;
         document.getElementById('totalSemana').innerText = `${hSem}h ${mSem.toString().padStart(2, '0')}m`;
