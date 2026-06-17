@@ -3,61 +3,446 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Datos Perdidos</title>
+    <title>Control de Jornada Avanzado</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
-        body { background: #121212; color: #fff; font-family: sans-serif; padding: 20px; text-align: center; }
-        textarea { width: 100%; height: 200px; background: #222; color: #10b981; border: 1px solid #444; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 11px; margin-top: 10px; }
-        .btn { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; margin-top: 15px; cursor: pointer; display: inline-block; text-decoration: none; }
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #3b82f6;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .date-picker-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="date"] {
+            background: #2b2b2b;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            flex: 1;
+            text-align: center;
+        }
+
+        .progress-container {
+            margin: 10px 0;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 22px;
+            position: relative;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            line-height: 22px;
+            color: #fff;
+        }
+
+        .tramo-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .tramo-row:last-child { border-bottom: none; margin-bottom: 0; }
+
+        input[type="time"] {
+            background: #2b2b2b;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            width: 85px;
+            text-align: center;
+        }
+
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+
+        .btn-add {
+            width: 100%;
+            padding: 11px;
+            background: #2b2b2b;
+            color: var(--accent-color);
+            border: 1px dashed var(--accent-color);
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #a0a0a0;
+            margin-bottom: 12px;
+            font-weight: 600;
+            border-bottom: 1px solid #333;
+            padding-bottom: 4px;
+        }
+
+        .summary-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            margin: 6px 0;
+        }
+
+        .thermometer-day {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .thermometer-day:last-child { border-bottom: none; }
+        
+        .thermometer-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        .thermometer-tramos {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .backup-zone { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-backup {
+            flex: 1; padding: 8px; background: #252525; color: #aaa;
+            border: 1px solid #333; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+        }
+        
+        .current-day-highlight {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h2>🔍 Buscador de Historial Local</h2>
-    <p>Si queda alguna copia de tus horas en la memoria del móvil, aparecerá en el cuadro de abajo:</p>
+
+<div class="container">
+    <h1>📅 Control de Jornada</h1>
+
+    <div class="card">
+        <div class="section-title">1. Seleccionar Fecha</div>
+        <div class="date-picker-container">
+            <input type="date" id="fechaActual" onchange="cambiarFecha()">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="section-title" style="display:flex; justify-content:space-between; border:none; margin:0;">
+            <span>2. Fichajes del día elegido</span>
+            <span id="totalDia" style="color: var(--success-color); font-weight: bold;">Total: 0h 00m</span>
+        </div>
+        <div id="tramosContenedor" style="margin-top:10px;"></div>
+        <button class="btn-add" onclick="agregarTramoVacio()">➕ Añadir Tramo a este día</button>
+    </div>
+
+    <div class="card">
+        <div class="section-title" id="tituloSemana">3. Termómetro Semanal (Objetivo 35h)</div>
+        
+        <div class="summary-text">
+            <span>Total Acumulado:</span>
+            <strong id="totalSemana">0h 00m</strong>
+        </div>
+        <div class="summary-text">
+            <span>Estado / Restante:</span>
+            <strong id="estadoSemana" style="color: var(--accent-color);">35h 00m restantes</strong>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressPct">0%</div>
+        </div>
+
+        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 5px;"></div>
+    </div>
+
+    <div class="backup-zone">
+        <button class="btn-backup" onclick="exportarDatos()">📥 Copia Seguridad</button>
+        <button class="btn-backup" onclick="importarDatos()">📤 Restaurar Datos</button>
+    </div>
+</div>
+
+<script>
+    const OBJETIVO_SEMANAL = 35;
+    const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     
-    <textarea id="consola" readonly>Buscando datos...</textarea>
+    // Migración por si acaso
+    let datosV2 = localStorage.getItem('registro_calendario_v2');
+    let datosV3 = localStorage.getItem('registro_calendario_v3');
+    if (datosV2 && !datosV3) {
+        localStorage.setItem('registro_calendario_v3', datosV2);
+    }
 
-    <div id="botonera"></div>
+    let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
 
-    <script>
-        window.onload = function() {
-            let consola = document.getElementById('consola');
-            let botonera = document.getElementById('botonera');
-            let registrosEncontrados = {};
-            let encontrado = false;
+    function formatearFechaLocalISO(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
-            // Escaneamos toda la memoria local buscando cualquier formato antiguo
-            for (let i = 0; i < localStorage.length; i++) {
-                let clave = localStorage.key(i);
-                let valor = localStorage.getItem(clave);
-                
-                if (clave.includes('registro_calendario') || clave.includes('fichajes') || valor.includes('entrada')) {
-                    registrosEncontrados[clave] = valor;
-                    encontrado = true;
-                }
-            }
+    function establecerFechaDeHoy() {
+        const hoy = new Date();
+        document.getElementById('fechaActual').value = formatearFechaLocalISO(hoy);
+    }
 
-            if (encontrado) {
-                consola.value = JSON.stringify(registrosEncontrados, null, 2);
-                consola.style.color = "#10b981";
-                
-                // Intentamos crear un botón para restablecerlo automáticamente
-                let btn = document.createElement('button');
-                btn.className = "btn";
-                btn.innerText = "🔄 Forzar Restauración de estos Datos";
-                btn.onclick = function() {
-                    try {
-                        for (let k in registrosEncontrados) {
-                            localStorage.setItem('registro_calendario_v3', registrosEncontrados[k]);
-                        }
-                        alert('¡Intento de restauración completado! Vuelve a poner el código de la app para comprobarlo.');
-                    } catch(e) { alert('Error al restaurar'); }
-                };
-                botonera.appendChild(btn);
-            } else {
-                consola.value = "No se ha encontrado ninguna base de datos guardada en la memoria local de este navegador.\n\nKeys actuales: " + JSON.stringify(Object.keys(localStorage));
-                consola.style.color = "#ef4444";
-            }
+    function inicializar() {
+        if (!document.getElementById('fechaActual').value) {
+            establecerFechaDeHoy();
         }
-    </script>
+        cargarDiaActual();
+    }
+
+    function cambiarFecha() {
+        cargarDiaActual();
+    }
+
+    function cargarDiaActual() {
+        const fecha = document.getElementById('fechaActual').value;
+        const contenedor = document.getElementById('tramosContenedor');
+        contenedor.innerHTML = '';
+
+        const tramos = baseDatos[fecha] || [];
+
+        if (tramos.length === 0) {
+            contenedor.innerHTML = '<div style="text-align:center; color:#666; font-size:0.9rem; padding: 5px 0;">No hay fichajes manuales este día.</div>';
+        } else {
+            tramos.forEach((tramo, index) => {
+                const div = document.createElement('div');
+                div.className = 'tramo-row';
+                div.innerHTML = `
+                    <input type="time" value="${tramo.entrada || ''}" onchange="actualizarTramo(${index}, 'entrada', this.value)">
+                    <span>a</span>
+                    <input type="time" value="${tramo.salida || ''}" onchange="actualizarTramo(${index}, 'salida', this.value)">
+                    <button class="btn-icon" onclick="eliminarTramo(${index})">❌</button>
+                `;
+                contenedor.appendChild(div);
+            });
+        }
+
+        calcularMetricasYTermometro(fecha);
+    }
+
+    function agregarTramoVacio() {
+        const fecha = document.getElementById('fechaActual').value;
+        if (!baseDatos[fecha]) baseDatos[fecha] = [];
+        baseDatos[fecha].push({ entrada: '', salida: '' });
+        guardarYActualizar();
+    }
+
+    function actualizarTramo(index, tipo, valor) {
+        const fecha = document.getElementById('fechaActual').value;
+        baseDatos[fecha][index][tipo] = valor;
+        guardarYActualizar();
+    }
+
+    function eliminarTramo(index) {
+        const fecha = document.getElementById('fechaActual').value;
+        baseDatos[fecha].splice(index, 1);
+        if (baseDatos[fecha].length === 0) delete baseDatos[fecha];
+        guardarYActualizar();
+    }
+
+    function guardarYActualizar() {
+        localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+        cargarDiaActual();
+    }
+
+    function obtenerLunesYDomingo(fechaStr) {
+        // Forzar interpretación de fecha local desglosando los componentes
+        const [yyyy, mm, dd] = fechaStr.split('-').map(Number);
+        const fecha = new Date(yyyy, mm - 1, dd);
+        
+        const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes...
+        const distanciaAlLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+        
+        const lunes = new Date(yyyy, mm - 1, dd + distanciaAlLunes);
+        return lunes;
+    }
+
+    function obtenerMinutosEntreHoras(entrada, salida) {
+        if (!entrada || !salida) return 0;
+        const [hIn, mIn] = entrada.split(':').map(Number);
+        const [hOut, mOut] = salida.split(':').map(Number);
+        let minIn = hIn * 60 + mIn;
+        let minOut = hOut * 60 + mOut;
+        if (minOut < minIn) minOut += 24 * 60;
+        return minOut - minIn;
+    }
+
+    function calcularMetricasYTermometro(fechaSeleccionada) {
+        let minutosDiaSeleccionado = 0;
+        if (baseDatos[fechaSeleccionada]) {
+            baseDatos[fechaSeleccionada].forEach(t => {
+                minutosDiaSeleccionado += obtenerMinutosEntreHoras(t.entrada, t.salida);
+            });
+        }
+        const hDia = Math.floor(minutosDiaSeleccionado / 60);
+        const mDia = minutosDiaSeleccionado % 60;
+        document.getElementById('totalDia').innerText = `Total: ${hDia}h ${mDia.toString().padStart(2, '0')}m`;
+
+        const lunes = obtenerLunesYDomingo(fechaSeleccionada);
+        const desgloseContenedor = document.getElementById('desgloseSemanalContenedor');
+        desgloseContenedor.innerHTML = '';
+
+        let minutosTotalesSemana = 0;
+        let diaBucle = new Date(lunes);
+
+        for (let i = 0; i < 7; i++) {
+            const ISOStr = formatearFechaLocalISO(diaBucle);
+            const nombreDia = nombresDias[diaBucle.getDay()];
+            const esElDiaSeleccionado = (ISOStr === fechaSeleccionada);
+            
+            let minutosEsteDia = 0;
+            let textoTramos = [];
+
+            if (baseDatos[ISOStr]) {
+                baseDatos[ISOStr].forEach(t => {
+                    const mins = obtenerMinutosEntreHoras(t.entrada, t.salida);
+                    minutosEsteDia += mins;
+                    if (t.entrada && t.salida) {
+                        textoTramos.push(`${t.entrada} a ${t.salida}`);
+                    }
+                });
+            }
+            minutosTotalesSemana += minutosEsteDia;
+
+            const hE = Math.floor(minutosEsteDia / 60);
+            const mE = minutosEsteDia % 60;
+            const tDiaStr = minutosEsteDia > 0 ? `${hE}h ${mE.toString().padStart(2, '0')}m` : '0h';
+            const tramosStr = textoTramos.length > 0 ? textoTramos.join(' | ') : 'Sin registros';
+
+            const divDia = document.createElement('div');
+            divDia.className = 'thermometer-day';
+            divDia.innerHTML = `
+                <div class="thermometer-header ${esElDiaSeleccionado ? 'current-day-highlight' : ''}">
+                    <span>${nombreDia} (${diaBucle.getDate()}/${diaBucle.getMonth()+1}) ${esElDiaSeleccionado ? '📌' : ''}</span>
+                    <span style="color: ${minutosEsteDia > 0 ? 'var(--success-color)' : '#666'}">${tDiaStr}</span>
+                </div>
+                <div class="thermometer-tramos">${tramosStr}</div>
+            `;
+            desgloseContenedor.appendChild(divDia);
+
+            diaBucle.setDate(diaBucle.getDate() + 1);
+        }
+
+        const hSem = Math.floor(minutosTotalesSemana / 60);
+        const mSem = minutosTotalesSemana % 60;
+        document.getElementById('totalSemana').innerText = `${hSem}h ${mSem.toString().padStart(2, '0')}m`;
+
+        const faltanMinutos = (OBJETIVO_SEMANAL * 60) - minutosTotalesSemana;
+        const estadoLabel = document.getElementById('estadoSemana');
+
+        if (faltanMinutos > 0) {
+            const hFaltan = Math.floor(faltanMinutos / 60);
+            const mFaltan = faltanMinutos % 60;
+            estadoLabel.innerText = `Faltan ${hFaltan}h ${mFaltan.toString().padStart(2, '0')}m`;
+            estadoLabel.style.color = 'var(--accent-color)';
+        } else if (faltanMinutos === 0) {
+            estadoLabel.innerText = '¡Objetivo 35h cumplido! 🎉';
+            estadoLabel.style.color = 'var(--success-color)';
+        } else {
+            const extraMinutos = Math.abs(faltanMinutos);
+            const hExtra = Math.floor(extraMinutos / 60);
+            const mExtra = extraMinutos % 60;
+            estadoLabel.innerText = `Horas Extra: +${hExtra}h ${mExtra.toString().padStart(2, '0')}m`;
+            estadoLabel.style.color = 'var(--success-color)';
+        }
+
+        let porcentaje = ((minutosTotalesSemana / 60) / OBJETIVO_SEMANAL) * 100;
+        if (porcentaje > 100) porcentaje = 100;
+        document.getElementById('progressBar').style.width = `${porcentaje}%`;
+        document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
+    }
+
+    function exportarDatos() {
+        const datosTexto = JSON.stringify(baseDatos);
+        navigator.clipboard.writeText(datosTexto).then(() => {
+            alert('¡Copia de seguridad copiada! Guárdala en tus notas.');
+        }).catch(() => {
+            alert('Copia tus datos manualmente:\n\n' + datosTexto);
+        });
+    }
+
+    function importarDatos() {
+        const texto = prompt('Pega el texto de tu copia de seguridad:');
+        if (texto) {
+            try {
+                const json = JSON.parse(texto);
+                if (typeof json === 'object') {
+                    baseDatos = json;
+                    localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+                    inicializar();
+                    alert('¡Datos restaurados!');
+                }
+            } catch(e) { alert('Error: Texto no válido.'); }
+        }
+    }
+
+    window.onload = inicializar;
+</script>
 </body>
 </html>
