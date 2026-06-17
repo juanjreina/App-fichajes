@@ -6,6 +6,9 @@
     <title>Control de Jornada Avanzado</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
+    
     <style>
         :root {
             --bg-color: #121212;
@@ -228,7 +231,6 @@
     const OBJETIVO_SEMANAL = 35;
     const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     
-    // Migración por si acaso
     let datosV2 = localStorage.getItem('registro_calendario_v2');
     let datosV3 = localStorage.getItem('registro_calendario_v3');
     if (datosV2 && !datosV3) {
@@ -312,13 +314,10 @@
     }
 
     function obtenerLunesYDomingo(fechaStr) {
-        // Forzar interpretación de fecha local desglosando los componentes
         const [yyyy, mm, dd] = fechaStr.split('-').map(Number);
         const fecha = new Date(yyyy, mm - 1, dd);
-        
-        const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes...
+        const diaSemana = fecha.getDay();
         const distanciaAlLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
-        
         const lunes = new Date(yyyy, mm - 1, dd + distanciaAlLunes);
         return lunes;
     }
@@ -341,7 +340,7 @@
             });
         }
         const hDia = Math.floor(minutosDiaSeleccionado / 60);
-        const mDia = minutosDiaSeleccionado % 60;
+        const mDia = minutesDiaSeleccionado % 60;
         document.getElementById('totalDia').innerText = `Total: ${hDia}h ${mDia.toString().padStart(2, '0')}m`;
 
         const lunes = obtenerLunesYDomingo(fechaSeleccionada);
