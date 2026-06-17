@@ -340,7 +340,7 @@
             });
         }
         const hDia = Math.floor(minutosDiaSeleccionado / 60);
-        const mDia = minutesDiaSeleccionado % 60;
+        const mDia = minutosDiaSeleccionado % 60;
         document.getElementById('totalDia').innerText = `Total: ${hDia}h ${mDia.toString().padStart(2, '0')}m`;
 
         const lunes = obtenerLunesYDomingo(fechaSeleccionada);
