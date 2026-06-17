@@ -2,53 +2,65 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Jornada Avanzado</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Control de Jornada</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
+    <!-- Icono para la pantalla de inicio del iPhone -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
     
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --accent-color: #3b82f6;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --border-color: #333;
+            --bg-color: #000000; /* Negro puro estilo iOS */
+            --card-bg: #1c1c1e;  /* Gris de tarjetas nativas de Apple */
+            --text-color: #f2f2f7;
+            --accent-color: #0a84ff; /* Azul Apple */
+            --success-color: #30d158; /* Verde Apple */
+            --danger-color: #ff453a; /* Rojo Apple */
+            --border-color: #38383a;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 15px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* Barra superior estilo App Nativa */
+        .app-header {
+            width: 100%;
+            padding-top: calc(15px + env(safe-area-inset-top)); /* Evita el notch/isla dinámica */
+            padding-bottom: 12px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background-color: #121212;
+            border-bottom: 0.5px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .container {
             width: 100%;
             max-width: 450px;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            color: #fff;
+            box-sizing: border-box;
+            padding: 16px;
         }
 
         .card {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            padding: 16px;
+            margin-bottom: 16px;
         }
 
         .date-picker-container {
@@ -59,22 +71,23 @@
         }
 
         input[type="date"] {
-            background: #2b2b2b;
-            border: 1px solid #444;
+            background: #2c2c2e;
+            border: none;
             color: #fff;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 10px;
             font-size: 1rem;
             flex: 1;
             text-align: center;
+            font-family: inherit;
         }
 
         .progress-container {
-            margin: 10px 0;
-            background: #333;
+            margin: 12px 0 4px 0;
+            background: #2c2c2e;
             border-radius: 10px;
             overflow: hidden;
-            height: 22px;
+            height: 24px;
             position: relative;
         }
 
@@ -90,69 +103,69 @@
             width: 100%;
             text-align: center;
             font-size: 0.85rem;
-            font-weight: bold;
-            line-height: 22px;
+            font-weight: 600;
+            line-height: 24px;
             color: #fff;
         }
 
         .tramo-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #2a2a2a;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 0.5px solid var(--border-color);
         }
         .tramo-row:last-child { border-bottom: none; margin-bottom: 0; }
 
         input[type="time"] {
-            background: #2b2b2b;
-            border: 1px solid #444;
+            background: #2c2c2e;
+            border: none;
             color: #fff;
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 0.95rem;
-            width: 85px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 90px;
             text-align: center;
+            font-family: inherit;
         }
 
-        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px; }
 
         .btn-add {
             width: 100%;
-            padding: 11px;
-            background: #2b2b2b;
+            padding: 12px;
+            background: transparent;
             color: var(--accent-color);
             border: 1px dashed var(--accent-color);
-            border-radius: 8px;
-            font-weight: bold;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         .section-title {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #a0a0a0;
+            color: #8e8e93;
             margin-bottom: 12px;
             font-weight: 600;
-            border-bottom: 1px solid #333;
-            padding-bottom: 4px;
         }
 
         .summary-text {
             display: flex;
             justify-content: space-between;
             font-size: 1rem;
-            margin: 6px 0;
+            margin: 8px 0;
         }
 
         .thermometer-day {
             display: flex;
             flex-direction: column;
-            padding: 8px 0;
-            border-bottom: 1px solid #2a2a2a;
+            padding: 10px 0;
+            border-bottom: 0.5px solid var(--border-color);
         }
         .thermometer-day:last-child { border-bottom: none; }
         
@@ -160,49 +173,67 @@
             display: flex;
             justify-content: space-between;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 1rem;
         }
         .thermometer-tramos {
-            font-size: 0.8rem;
-            color: #888;
-            margin-top: 2px;
+            font-size: 0.85rem;
+            color: #8e8e93;
+            margin-top: 4px;
         }
 
-        .backup-zone { display: flex; gap: 10px; margin-top: 20px; }
+        .backup-zone { display: flex; gap: 12px; margin-top: 20px; }
         .btn-backup {
-            flex: 1; padding: 8px; background: #252525; color: #aaa;
-            border: 1px solid #333; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
+            flex: 1; padding: 10px; background: var(--card-bg); color: #8e8e93;
+            border: 0.5px solid var(--border-color); border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: 500;
         }
         
         .current-day-highlight {
             color: var(--accent-color);
-            font-weight: bold;
+            font-weight: 600;
+        }
+
+        /* Panel de seguridad integrado (Evita errores de copia) */
+        .panel-backup {
+            display: none;
+            background: #1c1c1e;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 15px;
+        }
+        .panel-backup textarea {
+            width: 100%; height: 90px; background: #000; color: var(--success-color);
+            border: 0.5px solid var(--border-color); border-radius: 8px; padding: 8px;
+            font-family: monospace; font-size: 11px; box-sizing: border-box; resize: none; margin-top: 8px;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>📅 Control de Jornada</h1>
+<!-- Encabezado estilo iOS Nativo -->
+<div class="app-header">Control de Jornada</div>
 
+<div class="container">
+    <!-- 1. GESTIÓN DEL DÍA SELECCIONADO -->
     <div class="card">
-        <div class="section-title">1. Seleccionar Fecha</div>
+        <div class="section-title">Seleccionar Fecha</div>
         <div class="date-picker-container">
             <input type="date" id="fechaActual" onchange="cambiarFecha()">
         </div>
     </div>
 
     <div class="card">
-        <div class="section-title" style="display:flex; justify-content:space-between; border:none; margin:0;">
-            <span>2. Fichajes del día elegido</span>
-            <span id="totalDia" style="color: var(--success-color); font-weight: bold;">Total: 0h 00m</span>
+        <div class="summary-text" style="margin-bottom: 12px;">
+            <span class="section-title" style="margin:0;">Fichajes del día elegido</span>
+            <span id="totalDia" style="color: var(--success-color); font-weight: 600;">Total: 0h 00m</span>
         </div>
-        <div id="tramosContenedor" style="margin-top:10px;"></div>
-        <button class="btn-add" onclick="agregarTramoVacio()">➕ Añadir Tramo a este día</button>
+        <div id="tramosContenedor"></div>
+        <button class="btn-add" onclick="agregarTramoVacio()">Añadir Tramo</button>
     </div>
 
+    <!-- 2. TERMÓMETRO SEMANAL DETALLADO -->
     <div class="card">
-        <div class="section-title" id="tituloSemana">3. Termómetro Semanal (Objetivo 35h)</div>
+        <div class="section-title" id="tituloSemana">Termómetro Semanal (35h)</div>
         
         <div class="summary-text">
             <span>Total Acumulado:</span>
@@ -218,12 +249,19 @@
             <div class="progress-text" id="progressPct">0%</div>
         </div>
 
-        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 5px;"></div>
+        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 0.5px solid var(--border-color); padding-top: 5px;"></div>
     </div>
 
+    <!-- Zona de Seguridad Avanzada -->
     <div class="backup-zone">
-        <button class="btn-backup" onclick="exportarDatos()">📥 Copia Seguridad</button>
-        <button class="btn-backup" onclick="importarDatos()">📤 Restaurar Datos</button>
+        <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
+        <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
+    </div>
+
+    <div class="panel-backup" id="panelBackup">
+        <span class="section-title" id="backupTitle">Copia de Seguridad</span>
+        <textarea id="txtBackup"></textarea>
+        <button class="btn-add" id="btnAccionBackup" style="margin-top:10px;" onclick="procesarAccionBackup()">Listo</button>
     </div>
 </div>
 
@@ -238,6 +276,7 @@
     }
 
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
+    let modoBackup = '';
 
     function formatearFechaLocalISO(date) {
         const yyyy = date.getFullYear();
@@ -270,16 +309,16 @@
         const tramos = baseDatos[fecha] || [];
 
         if (tramos.length === 0) {
-            contenedor.innerHTML = '<div style="text-align:center; color:#666; font-size:0.9rem; padding: 5px 0;">No hay fichajes manuales este día.</div>';
+            contenedor.innerHTML = '<div style="text-align:center; color:#666; font-size:0.9rem; padding: 5px 0; margin-bottom:10px;">No hay fichajes manuales este día.</div>';
         } else {
             tramos.forEach((tramo, index) => {
                 const div = document.createElement('div');
                 div.className = 'tramo-row';
                 div.innerHTML = `
                     <input type="time" value="${tramo.entrada || ''}" onchange="actualizarTramo(${index}, 'entrada', this.value)">
-                    <span>a</span>
+                    <span style="color:#8e8e93;">a</span>
                     <input type="time" value="${tramo.salida || ''}" onchange="actualizarTramo(${index}, 'salida', this.value)">
-                    <button class="btn-icon" onclick="eliminarTramo(${index})">❌</button>
+                    <button class="btn-icon" onclick="eliminarTramo(${index})">🗑️</button>
                 `;
                 contenedor.appendChild(div);
             });
@@ -318,8 +357,7 @@
         const fecha = new Date(yyyy, mm - 1, dd);
         const diaSemana = fecha.getDay();
         const distanciaAlLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
-        const lunes = new Date(yyyy, mm - 1, dd + distanciaAlLunes);
-        return lunes;
+        return new Date(yyyy, mm - 1, dd + distanciaAlLunes);
     }
 
     function obtenerMinutosEntreHoras(entrada, salida) {
@@ -417,28 +455,40 @@
         document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
     }
 
-    function exportarDatos() {
-        const datosTexto = JSON.stringify(baseDatos);
-        navigator.clipboard.writeText(datosTexto).then(() => {
-            alert('¡Copia de seguridad copiada! Guárdala en tus notas.');
-        }).catch(() => {
-            alert('Copia tus datos manualmente:\n\n' + datosTexto);
-        });
+    // NUEVAS FUNCIONES DE COPIA INTEGRADAS EN PANTALLA
+    function mostrarExportar() {
+        modoBackup = 'exportar';
+        document.getElementById('panelBackup').style.display = 'block';
+        document.getElementById('backupTitle').innerText = 'Copia generada. Cópiala desde aquí:';
+        document.getElementById('txtBackup').value = JSON.stringify(baseDatos);
+        document.getElementById('btnAccionBackup').innerText = 'Entendido / Cerrar';
+        document.getElementById('txtBackup').select();
     }
 
-    function importarDatos() {
-        const texto = prompt('Pega el texto de tu copia de seguridad:');
-        if (texto) {
-            try {
-                const json = JSON.parse(texto);
-                if (typeof json === 'object') {
-                    baseDatos = json;
-                    localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
-                    inicializar();
-                    alert('¡Datos restaurados!');
-                }
-            } catch(e) { alert('Error: Texto no válido.'); }
+    function mostrarImportar() {
+        modoBackup = 'importar';
+        document.getElementById('panelBackup').style.display = 'block';
+        document.getElementById('backupTitle').innerText = 'Pega tu copia de seguridad aquí:';
+        document.getElementById('txtBackup').value = '';
+        document.getElementById('btnAccionBackup').innerText = 'Restaurar Datos';
+    }
+
+    function procesarAccionBackup() {
+        if (modoBackup === 'importar') {
+            const texto = document.getElementById('txtBackup').value;
+            if (texto) {
+                try {
+                    const json = JSON.parse(texto);
+                    if (typeof json === 'object') {
+                        baseDatos = json;
+                        localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+                        inicializar();
+                        alert('¡Datos restaurados con éxito!');
+                    }
+                } catch(e) { alert('Error: El texto introducido no es válido.'); }
+            }
         }
+        document.getElementById('panelBackup').style.display = 'none';
     }
 
     window.onload = inicializar;
