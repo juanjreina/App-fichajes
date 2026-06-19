@@ -398,32 +398,28 @@
             inyectarFilaTabla(m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        // CÓMPUTO DINÁMICO DE JUNIO COMPLETO HASTA EL DÍA DE HOY
+        // CÓMPUTO DINÁMICO DE JUNIO (SOLO HASTA AYER JUEVES PARA EL TEÓRICO BASE)
         let minsFichadosJunio = 0;
         let minsTeoricosJunioHastaHoy = 0;
 
-        // Obtenemos la fecha de hoy de forma limpia
         let hoyObjeto = new Date();
         let hoyISO = formatearFechaLocalISO(hoyObjeto);
 
-        // Recorremos desde el día 1 de junio hasta el día de HOY inclusive
         let diaCorriente = new Date(2026, 5, 1); // 1 de Junio
-        while (formatearFechaLocalISO(diaCorriente) <= hoyISO) {
+        while (formatearFechaLocalISO(diaCorriente) < hoyISO) { // < hoyISO asegura estricto hasta ayer
             let ISO = formatearFechaLocalISO(diaCorriente);
             let dayOfWeek = diaCorriente.getDay();
 
-            // Si es laborable (Lunes a Viernes) sumamos su teórico base de 7h SI NO es incidencia
             if (dayOfWeek >= 1 && dayOfWeek <= 5) {
                 const reg = baseDatos[ISO];
                 if (!reg || !reg.incidencia) {
-                    minsTeoricosJunioHastaHoy += 7 * 60; // Añade 7h
+                    minsTeoricosJunioHastaHoy += 7 * 60; // 7 horas
                 }
             }
-            
             diaCorriente.setDate(diaCorriente.getDate() + 1);
         }
 
-        // El fichado recorre todo junio para capturar cualquier tramo introducido
+        // El fichado recorre todo junio completo para absorber lo que metas hoy
         for (let fechaKey in baseDatos) {
             if (fechaKey.startsWith('2026-06-')) {
                 minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
@@ -433,7 +429,7 @@
         let saldoJunio = minsFichadosJunio - minsTeoricosJunioHastaHoy;
         inyectarFilaTabla('Junio', minsFichadosJunio, minsTeoricosJunioHastaHoy, saldoJunio);
 
-        // BOLSA GLOBAL TOTAL ACUMULADA DESDE ENERO
+        // BOLSA GLOBAL TOTAL ACUMULADA
         let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunio;
         const panelGlobal = document.getElementById('saldoGlobalTotal');
         
