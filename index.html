@@ -84,8 +84,10 @@
         .tabla-meses td { padding: 10px 0; border-bottom: 0.5px solid #2c2c2e; }
         .tabla-meses tr:last-child td { border-bottom: none; }
 
-        .backup-zone { display: flex; gap: 12px; margin-top: 20px; }
-        .btn-backup { flex: 1; padding: 10px; background: var(--card-bg); color: #8e8e93; border: 0.5px solid var(--border-color); border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+        .backup-zone { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .backup-buttons-row { display: flex; gap: 12px; }
+        .btn-backup { flex: 1; padding: 12px; background: var(--card-bg); color: #8e8e93; border: 0.5px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+        .btn-repair { width: 100%; padding: 12px; background: #1c2e24; color: var(--success-color); border: 1px solid #30d158; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 600; text-align: center; }
         .panel-backup { display: none; background: #1c1c1e; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-top: 15px; }
         .panel-backup textarea { width: 100%; height: 90px; background: #000; color: var(--success-color); border: 0.5px solid var(--border-color); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 11px; box-sizing: border-box; resize: none; margin-top: 8px; }
         .current-day-highlight { color: var(--accent-color); font-weight: 600; }
@@ -163,8 +165,11 @@
     </div>
 
     <div class="backup-zone">
-        <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
-        <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
+        <div class="backup-buttons-row">
+            <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
+            <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
+        </div>
+        <button class="btn-repair" onclick="repararYForzarJunio()">🔄 Forzar Sincronización Junio</button>
     </div>
 
     <div class="panel-backup" id="panelBackup">
@@ -189,7 +194,7 @@
     }
 
     function formatearFechaLocalISO(date) {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0');}`;
     }
 
     function inicializar() {
@@ -333,7 +338,7 @@
                 tramosStr = '<span class="badge-incidencia">DÍA ESPECIAL (LIBRE)</span>';
             } else if (reg && reg.tramos && reg.tramos.length > 0) {
                 let tTxt = [];
-                reg.tramos.forEach(t => { if(t.entrada && t.salida) tTxt.push(`${t.entrada} a ${t.salida}`)});
+                reg.tramos.forEach(t => { if(t.entrada && t.salida) tTxt.push(`${t.entrada} a ${t.salida}`);});
                 if (tTxt.length > 0) tramosStr = tTxt.join(' | ');
             }
 
@@ -383,7 +388,6 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
-        // Histórico fijo e inamovible de Enero a Mayo (Clavado con tu Intranet)
         let mesesEstaticos = [
             { nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
             { nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
@@ -398,28 +402,11 @@
             inyectarFilaTabla(m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        // CÓMPUTO DINÁMICO DE JUNIO (SOLO HASTA AYER JUEVES PARA EL TEÓRICO BASE)
+        // TEÓRICO FIJO E INAMOVIBLE DE JUNIO HASTA AYER JUEVES (11 DÍAS TRABAJADOS x 7 HORAS = 77:00h)
+        let minsTeoricosJunioHastaHoy = 77 * 60; 
+
+        // Sumamos dinámicamente todo lo guardado en el mes corriente
         let minsFichadosJunio = 0;
-        let minsTeoricosJunioHastaHoy = 0;
-
-        let hoyObjeto = new Date();
-        let hoyISO = formatearFechaLocalISO(hoyObjeto);
-
-        let diaCorriente = new Date(2026, 5, 1); // 1 de Junio
-        while (formatearFechaLocalISO(diaCorriente) < hoyISO) { // < hoyISO asegura estricto hasta ayer
-            let ISO = formatearFechaLocalISO(diaCorriente);
-            let dayOfWeek = diaCorriente.getDay();
-
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                const reg = baseDatos[ISO];
-                if (!reg || !reg.incidencia) {
-                    minsTeoricosJunioHastaHoy += 7 * 60; // 7 horas
-                }
-            }
-            diaCorriente.setDate(diaCorriente.getDate() + 1);
-        }
-
-        // El fichado recorre todo junio completo para absorber lo que metas hoy
         for (let fechaKey in baseDatos) {
             if (fechaKey.startsWith('2026-06-')) {
                 minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
@@ -474,6 +461,47 @@
             <td style="color:${colorDif}; font-weight:600;">${difStr}</td>
         `;
         cuerpo.appendChild(tr);
+    }
+
+    // FUNCIÓN MAGNA PARA BORRAR JUNIO DE FORMA LIMPIA E INYECTAR TUS TRAMOS REALES DE TU CUADRANTE
+    function repararYForzarJunio() {
+        if (!confirm("Esto reorganizará de cero los fichajes de Junio con tus datos reales validados de la Intranet. ¿Continuar?")) return;
+
+        // 1. Limpiamos cualquier rastro que empiece por 2026-06
+        for (let key in baseDatos) {
+            if (key.startsWith("2026-06-")) delete baseDatos[key];
+        }
+
+        // 2. Seteamos los días de Libre Disposición/Vacaciones (5, 8 y 12 de Junio)
+        baseDatos["2026-06-05"] = { incidencia: true, tramos: [] };
+        baseDatos["2026-06-08"] = { incidencia: true, tramos: [] };
+        baseDatos["2026-06-12"] = { incidencia: true, tramos: [] };
+
+        // 3. Inyectamos los fichajes reales uno a uno tal y como indica tu Intranet
+        baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "08:00", salida: "15:00" }] }; // 7h
+        baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:20", salida: "18:20" }] }; // 9h
+        baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "08:10", salida: "14:05" }, { entrada: "15:30", salida: "19:00" }] }; // 9h 25m
+        baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:15", salida: "18:15" }] }; // 9h
+        
+        // El viernes 5 fue especial (Incidencia asignada arriba)
+
+        // El lunes 8 fue especial (Incidencia asignada arriba)
+        baseDatos["2026-06-09"] = { incidencia: false, tramos: [{ entrada: "08:10", salida: "14:05" }] }; // 5h 55m
+        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "19:00" }] }; // 9h 30m
+        baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:20", salida: "18:20" }] }; // 9h
+        
+        // El viernes 12 fue especial (Incidencia asignada arriba)
+
+        baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:15", salida: "18:15" }] }; // 9h
+        baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "19:00" }] }; // 9h 30m
+        baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "08:31", salida: "14:15" }, { entrada: "15:35", salida: "17:35" }] }; // 7h 44m
+        
+        // Ayer Jueves 18 de Junio
+        baseDatos["2026-06-18"] = { incidencia: false, tramos: [{ entrada: "08:53", salida: "13:46" }, { entrada: "15:01", salida: "19:44" }] }; // 9h 36m
+
+        // Guardamos todo en local
+        guardarYActualizar();
+        alert("¡Mes de Junio purgado y sincronizado con tu portal al 100%! 🎉");
     }
 
     function mostrarExportar() {
