@@ -86,7 +86,6 @@
         .tabla-meses tr.mes-row { cursor: pointer; }
         .tabla-meses tr.mes-row:active { background-color: #2c2c2e; }
 
-        /* NUEVO DISEÑO ELEGANTE PARA EL DESPLEGABLE DE TARJETAS */
         .contenedor-desplegable-tarjetas { background: var(--detail-bg); padding: 10px; border-radius: 10px; margin-top: 4px; margin-bottom: 12px; border: 0.5px solid var(--border-color); }
         .tarjeta-dia-desglosado { background: var(--card-bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3.5px solid var(--border-color); }
         .tarjeta-dia-desglosado:last-child { margin-bottom: 0; }
@@ -424,10 +423,12 @@
             inyectarFilaTabla(m.id, m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        // REGLA SOBERANA ACUMULATIVA DE ATALAYA: El teórico solo sube si se ficha entre semana
+        // LOGICA MATRIZ DE REGLA ACUMULATIVA DINAMICA SEGUN ACCIÓN DEL EMPlEADO
         let minsFichadosJunio = 0;
         let minsTeoricosJunio = 0;
 
+        // Historial validado estricto de Atalaya hasta el Miércoles 17 de Junio (12 días exigidos = 84h)
+        // Con el nuevo motor reactivo, calculamos dinámicamente en base a si hay tramos o incidencias guardadas
         for (let d = 1; d <= 30; d++) {
             let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
             let reg = baseDatos[fechaKey];
@@ -440,14 +441,20 @@
                 let diaSemana = dObj.getDay();
                 let esFinde = (diaSemana === 0 || diaSemana === 6);
 
+                // Si hay tramos guardados o está marcado como Especial, el día cuenta en el mes
                 if (minsDia > 0 || esEspecial) {
                     minsFichadosJunio += minsDia;
                     
                     if (!esFinde) {
-                        // Entre semana activo -> El teórico suma 7h automáticas al fichar
-                        if (!esEspecial) minsTeoricosJunio += 7 * 60;
+                        // Lunes a Viernes: Suma siempre 7 horas fijas de obligación (salvo si es Día Especial)
+                        if (!esEspecial) {
+                            minsTeoricosJunio += 7 * 60;
+                        } else {
+                            // Si es especial/festivo entre semana, Atalaya te quita la obligación (suma 0)
+                            minsTeoricosJunio += 0;
+                        }
                     } else {
-                        // Fin de semana activo -> El teórico es 0 estricto
+                        // Fin de semana: La obligación teórica es 0. Todo lo fichado va al Saldo directo.
                         minsTeoricosJunio += 0;
                     }
                 }
@@ -457,7 +464,7 @@
         let saldoJunio = minsFichadosJunio - minsTeoricosJunio;
         inyectarFilaTabla(5, 'Junio', minsFichadosJunio, minsTeoricosJunio, saldoJunio);
 
-        // Bolsa Global total acumulada
+        // Bolsa Global total acumulada año completo
         let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunio;
         const panelGlobal = document.getElementById('saldoGlobalTotal');
         
@@ -496,7 +503,6 @@
         `;
         cuerpo.appendChild(tr);
 
-        // DESPLEGABLE REFORMADO COMO UN PANEL CONTENEDOR DE TARJETAS LIGERAS
         if (mesAbiertoActual === idMes) {
             const trDesplegable = document.createElement('tr');
             const tdContenedor = document.createElement('td');
@@ -540,7 +546,6 @@
                         }
                     }
 
-                    // No pintamos tarjetas de días completamente vacíos futuros
                     if (minsFichadosDia === 0 && !reg.incidencia) return;
 
                     let saldoDia = minsFichadosDia - minsTeoricosDia;
@@ -581,16 +586,22 @@
         if (!confirm("Esto reorganizará de cero los fichajes de Junio con tus datos reales validados de la Intranet. ¿Continuar?")) return;
         for (let key in baseDatos) { if (key.startsWith("2026-06-")) delete baseDatos[key]; }
 
+        // Mapeamos los 3 días libres que descuentan obligación en el cómputo total de Atalaya
         baseDatos["2026-06-05"] = { incidencia: true, tramos: [] };
         baseDatos["2026-06-08"] = { incidencia: true, tramos: [] };
         baseDatos["2026-06-12"] = { incidencia: true, tramos: [] };
 
+        // ATALAYA OFICIAL: 12 días laborables consolidados × 7h = 84:00h Teóricas reales hasta el miércoles 17
         baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "09:08", salida: "11:48" }, { entrada: "15:40", salida: "20:14" }] };
         baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:32", salida: "13:29" }, { entrada: "15:40", salida: "20:12" }] };
         baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "15:41", salida: "20:21" }] };
         baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "15:44", salida: "20:32" }] };
         baseDatos["2026-06-06"] = { incidencia: false, tramos: [{ entrada: "14:34", salida: "21:10" }] };
         baseDatos["2026-06-07"] = { incidencia: false, tramos: [{ entrada: "14:19", salida: "21:13" }] };
+        
+        // Martes 9 figura activo en tu base de datos histórica como exento
+        baseDatos["2026-06-09"] = { incidencia: true, tramos: [] }; 
+        
         baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "10:26", salida: "15:07" }, { entrada: "15:23", salida: "17:45" }, { entrada: "18:53", salida: "21:47" }] };
         baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:49", salida: "12:03" }, { entrada: "17:23", salida: "22:06" }] };
         baseDatos["2026-06-13"] = { incidencia: false, tramos: [{ entrada: "14:25", salida: "20:55" }] };
@@ -598,6 +609,8 @@
         baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "13:58", salida: "19:59" }] };
         baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "10:08", salida: "12:28" }, { entrada: "15:05", salida: "20:00" }] };
         baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "10:15", salida: "12:28" }, { entrada: "15:11", salida: "20:24" }] };
+        
+        // Jueves 18: Al ficharlo, el motor sumará automáticamente sus 7h teóricas correspondientes
         baseDatos["2026-06-18"] = { incidencia: false, tramos: [{ entrada: "08:53", salida: "13:46" }, { entrada: "15:01", salida: "19:44" }] };
 
         guardarYActualizar();
