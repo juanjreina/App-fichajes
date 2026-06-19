@@ -85,7 +85,6 @@
         .tabla-meses tr.mes-row { cursor: pointer; }
         .tabla-meses tr.mes-row:active { background-color: #2c2c2e; }
 
-        /* Contenedor del desplegable de días */
         .desplegable-detalles { background: #121212; font-size: 0.85rem; color: #d1d1d6; border-radius: 8px; padding: 4px 10px; margin-top: 2px; margin-bottom: 8px; border-left: 2px solid var(--accent-color); }
         .fila-detalle-dia { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #2c2c2e; }
         .fila-detalle-dia:last-child { border-bottom: none; }
@@ -112,7 +111,7 @@
     <div class="card card-global">
         <div class="section-title" style="color: var(--accent-color);">Bolsa de Horas Total Acumulada</div>
         <div style="font-size: 1.8rem; font-weight: 700; margin: 4px 0;" id="saldoGlobalTotal">0:00</div>
-        <div style="font-size: 0.8rem; color: #8e8e93;">Saldo neto acumulado ajustado dinámicamente</div>
+        <div style="font-size: 0.8rem; color: #8e8e93;">Saldo neto acumulado ajustado al día</div>
     </div>
 
     <div class="card">
@@ -193,7 +192,7 @@
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
-    let mesAbiertoActual = null; // Controla qué mes está desplegado
+    let mesAbiertoActual = null;
 
     function obtenerObjetivoSemanal(fechaStr) {
         const [yyyy, mm] = fechaStr.split('-').map(Number);
@@ -311,7 +310,7 @@
 
     function calcularMinutosDeUnDia(fechaStr) {
         const registro = baseDatos[fechaStr];
-        if (!registro || registro.incidencia) return 0;
+        if (!registro) return 0;
         let mins = 0;
         if (registro.tramos) {
             registro.tramos.forEach(t => mins += obtenerMinutosEntreHoras(t.entrada, t.salida));
@@ -397,6 +396,7 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
+        // Histórico fijo e inamovible aprobado de Enero a Mayo (Bolsa antigua 28h)
         let mesesEstaticos = [
             { id: 0, nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
             { id: 1, nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
@@ -411,19 +411,41 @@
             inyectarFilaTabla(m.id, m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        // Cómputo Junio Dinámico exacto
-        let minsTeoricosJunioHastaHoy = 77 * 60; 
+        // NUEVA REGLA MATRIZ UNIVERSAL (SOLO APLICABLE A PARTIR DE JUNIO DE 2026 HACIA ADELANTE)
         let minsFichadosJunio = 0;
-        for (let fechaKey in baseDatos) {
-            if (fechaKey.startsWith('2026-06-')) {
-                minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
+        let minsTeoricosJunio = 0;
+
+        for (let d = 1; d <= 30; d++) {
+            let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
+            let reg = baseDatos[fechaKey];
+            
+            if (reg) {
+                let minsFichadosDia = calcularMinutosDeUnDia(fechaKey);
+                let esDiaEspecial = reg.incidencia === true;
+                
+                let dObj = new Date(2026, 5, d); 
+                let diaSemana = dObj.getDay();
+                let esFinDeSemana = (diaSemana === 0 || diaSemana === 6);
+
+                if (minsFichadosDia > 0 || esDiaEspecial) {
+                    minsFichadosJunio += minsFichadosDia;
+                    
+                    // REGLA 35 HORAS (A PARTIR DE JUNIO): Fines de semana son estrictamente Teórico 0h.
+                    if (!esFinDeSemana) {
+                        if (!esDiaEspecial) {
+                            minsTeoricosJunio += 7 * 60; // Obligación diaria entre semana
+                        }
+                    } else {
+                        minsTeoricosJunio += 0; // Fines de semana acumulan directo a favor
+                    }
+                }
             }
         }
 
-        let saldoJunio = minsFichadosJunio - minsTeoricosJunioHastaHoy;
-        inyectarFilaTabla(5, 'Junio', minsFichadosJunio, minsTeoricosJunioHastaHoy, saldoJunio);
+        let saldoJunio = minsFichadosJunio - minsTeoricosJunio;
+        inyectarFilaTabla(5, 'Junio', minsFichadosJunio, minsTeoricosJunio, saldoJunio);
 
-        // Bolsa Global total acumulada
+        // Bolsa Global total acumulada año completo
         let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunio;
         const panelGlobal = document.getElementById('saldoGlobalTotal');
         
@@ -471,7 +493,6 @@
         `;
         cuerpo.appendChild(tr);
 
-        // Si este mes es el que está abierto, inyectamos justo debajo el bloque desplegable
         if (mesAbiertoActual === idMes) {
             const trDesplegable = document.createElement('tr');
             const tdContenedor = document.createElement('td');
@@ -480,7 +501,6 @@
             const divDetalle = document.createElement('div');
             divDetalle.className = 'desplegable-detalles';
             
-            // Filtramos y ordenamos los días de este mes que tengan datos guardados
             let prefijoMes = `2026-${String(idMes+1).padStart(2, '0')}`;
             let diasEncontrados = Object.keys(baseDatos)
                 .filter(k => k.startsWith(prefijoMes))
@@ -524,9 +544,9 @@
 
     function alternarDesplegableMes(idMes) {
         if (mesAbiertoActual === idMes) {
-            mesAbiertoActual = null; // Si vuelves a pinchar el mismo, se cierra
+            mesAbiertoActual = null;
         } else {
-            mesAbiertoActual = idMes; // Abre el seleccionado
+            mesAbiertoActual = idMes;
         }
         dibujarTablaYCalcularGlobal();
     }
@@ -544,7 +564,7 @@
         baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "08:10", salida: "14:05" }, { entrada: "15:30", salida: "19:00" }] };
         baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:15", salida: "18:15" }] };
         baseDatos["2026-06-09"] = { incidencia: false, tramos: [{ entrada: "08:10", salida: "14:05" }] };
-        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "19:00" }] };
+        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "17:30" }, { entrada: "17:42", salida: "19:12" }] };
         baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:20", salida: "18:20" }] };
         baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:15", salida: "18:15" }] };
         baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "19:00" }] };
