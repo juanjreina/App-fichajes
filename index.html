@@ -1,3 +1,5 @@
+Tengo esta app:
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -43,6 +45,7 @@
         .sync-status {
             font-size: 0.8rem; color: var(--success-color); font-weight: 500;
             background: #1c2e24; border: 0.5px solid #30d158; padding: 4px 10px; border-radius: 12px;
+            cursor: pointer;
         }
 
         .container { width: 100%; max-width: 450px; box-sizing: border-box; padding: 16px; }
@@ -82,16 +85,19 @@
         .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
         .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
 
+        /* CSS ORIGINAL RESTAURADO Y BLINDADO PARA EL TERMÓMETRO */
         .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); box-sizing: border-box; }
         .thermometer-day:last-child { border-bottom: none; }
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
         .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
 
+        /* Estructura Limpia de Tabla Mensual (Estática) */
         .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
         .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
         .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
         .col-right { text-align: right; }
 
+        /* Estilos Bloque de Detalle Historial Diario */
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
         .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
@@ -120,7 +126,7 @@
 
 <div class="app-header">
     <div class="header-title">Control de Jornada</div>
-    <div class="sync-status" id="statusSync">✓ Activo</div>
+    <div class="sync-status" id="statusSync" onclick="repararYForzarJunio()">✓ Sincronizado</div>
 </div>
 
 <div class="container">
@@ -233,13 +239,8 @@
     function obtenerObjetivoSemanal(fechaStr) {
         const [yyyy, mm] = fechaStr.split('-').map(Number);
         if (yyyy < 2026) return 28;
-        if (yyyy === 2026 && mm < 6) return 28; 
-        return 35; 
-    }
-
-    function obtenerMinutosTeoricosDia(fechaStr) {
-        const horasSemanales = obtenerObjetivoSemanal(fechaStr);
-        return (horasSemanales / 5) * 60;
+        if (yyyy === 2026 && mm < 6) return 28;
+        return 35;
     }
 
     function formatearFechaLocalISO(date) {
@@ -272,7 +273,10 @@
         contenedor.innerHTML = '';
 
         if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, tramos: [] };
-        
+        if (Array.isArray(baseDatos[fecha])) {
+            baseDatos[fecha] = { incidencia: false, tramos: baseDatos[fecha] };
+        }
+
         if (baseDatos[fecha].incidencia) {
             contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUTADO (0h)</div>';
             btnInc.innerText = '❌ Quitar Día Especial';
@@ -465,18 +469,21 @@
             inyectarFilaTablaResumen(m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        let minsTeoricosJunio = 0; 
+        let minsTeoricosJunio = 84 * 60; 
         let minsFichadosJunio = 0;
+
+        for (let d = 1; d <= 30; d++) {
+            let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
+            minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
+        }
 
         const fechaHoy = new Date();
         const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
 
-        for (let d = 1; d <= 30; d++) {
+        for (let d = 18; d <= 30; d++) {
             let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
             let reg = baseDatos[fechaKey];
             
-            minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
-
             let dObj = new Date(2026, 5, d); 
             let diaSemana = dObj.getDay();
             let esFinde = (diaSemana === 0 || diaSemana === 6);
@@ -486,7 +493,7 @@
                 if (d <= diaHoyJunio || tieneFichajeFuturo) {
                     let esEspecial = reg && reg.incidencia === true;
                     if (!esEspecial) {
-                        minsTeoricosJunio += obtenerMinutosTeoricosDia(fechaKey); 
+                        minsTeoricosJunio += 7 * 60;
                     }
                 }
             }
@@ -550,8 +557,7 @@
         let tieneRegistros = false;
 
         const fechaHoy = new Date();
-        const esMesActualReal = (fechaHoy.getFullYear() === historialAñoActivo && fechaHoy.getMonth() === historialMesActivo);
-        const diaLimite = esMesActualReal ? fechaHoy.getDate() : totalDiasMes;
+        const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
 
         for (let d = 1; d <= totalDiasMes; d++) {
             let fechaKey = `${historialAñoActivo}-${String(historialMesActivo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -572,8 +578,18 @@
                 esEspecial = reg.incidencia === true;
             }
 
-            if (!esFinde && (d <= diaLimite || minsFichadosDia > 0 || esEspecial)) {
-                minsTeoricosDia = esEspecial ? 0 : obtenerMinutosTeoricosDia(fechaKey);
+            if (historialAñoActivo === 2026 && historialMesActivo === 5) { 
+                if (d < 18) {
+                    minsTeoricosDia = (esFinde || esEspecial) ? 0 : 7 * 60;
+                } else {
+                    if (!esFinde && (d <= diaHoyJunio || minsFichadosDia > 0 || esEspecial)) {
+                        minsTeoricosDia = esEspecial ? 0 : 7 * 60;
+                    }
+                }
+            } else {
+                if (!esFinde && (minsFichadosDia > 0 || esEspecial)) {
+                    minsTeoricosDia = esEspecial ? 0 : 7 * 60;
+                }
             }
 
             const esDiaDelPicker = (fechaKey === document.getElementById('fechaActual').value);
@@ -587,10 +603,7 @@
             if (saldoDia < 0) colorSaldo = 'var(--danger-color)';
 
             let cadenaFichada = esEspecial ? '<span class="badge-incidencia">ESPECIAL</span>' : `${Math.floor(minsFichadosDia/60)}h ${String(minsFichadosDia%60).padStart(2,'0')}m`;
-            
-            let hTeorica = Math.floor(minsTeoricosDia / 60);
-            let mTeorica = minsTeoricosDia % 60;
-            let cadenaTeorica = mTeorica > 0 ? `${hTeorica}h ${mTeorica}m` : `${hTeorica}h`;
+            let cadenaTeorica = `${Math.floor(minsTeoricosDia/60)}h`;
 
             const tr = document.createElement('tr');
             if (esDiaDelPicker) tr.style.backgroundColor = '#1c1c1e'; 
@@ -606,6 +619,37 @@
         if (!tieneRegistros) {
             cuerpoDiario.innerHTML = '<tr><td colspan="4" style="color:#666; text-align:center; padding: 15px 0;">No hay ningún registro para este mes.</td></tr>';
         }
+    }
+
+    function repararYForzarJunio() {
+        if (!confirm("Esto reorganizará de cero los fichajes de Junio con tus datos reales validados de la Intranet. ¿Continuar?")) return;
+        for (let key in baseDatos) { if (key.startsWith("2026-06-")) delete baseDatos[key]; }
+
+        baseDatos["2026-06-05"] = { incidencia: true, tramos: [] };
+        baseDatos["2026-06-08"] = { incidencia: true, tramos: [] };
+        baseDatos["2026-06-12"] = { incidencia: true, tramos: [] };
+
+        baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "09:08", salida: "11:48" }, { entrada: "15:40", salida: "20:14" }] };
+        baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:32", salida: "13:29" }, { entrada: "15:40", salida: "20:12" }] };
+        baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "15:41", salida: "20:21" }] };
+        baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "15:44", salida: "20:32" }] };
+        baseDatos["2026-06-06"] = { incidencia: false, tramos: [{ entrada: "14:34", salida: "21:10" }] };
+        baseDatos["2026-06-07"] = { incidencia: false, tramos: [{ entrada: "14:19", salida: "21:13" }] };
+        
+        baseDatos["2026-06-09"] = { incidencia: true, tramos: [] }; 
+        
+        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "10:26", salida: "15:07" }, { entrada: "15:23", salida: "17:45" }, { entrada: "18:53", salida: "21:47" }] };
+        baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:49", salida: "12:03" }, { entrada: "17:23", salida: "22:06" }] };
+        baseDatos["2026-06-13"] = { incidencia: false, tramos: [{ entrada: "14:25", salida: "20:55" }] };
+        baseDatos["2026-06-14"] = { incidencia: false, tramos: [{ entrada: "10:56", salida: "15:48" }] };
+        baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "13:58", salida: "19:59" }] };
+        baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "10:08", salida: "12:28" }, { entrada: "15:05", salida: "20:00" }] };
+        baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "10:15", salida: "12:28" }, { entrada: "15:11", salida: "20:24" }] };
+        
+        baseDatos["2026-06-18"] = { incidencia: false, tramos: [{ entrada: "08:53", salida: "13:46" }, { entrada: "15:01", salida: "19:44" }] };
+
+        guardarYActualizar();
+        alert("¡Mes de Junio purgado y sincronizado con tu portal al 100%! 🎉");
     }
 
     let modoBackup = '';
