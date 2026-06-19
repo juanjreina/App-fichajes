@@ -19,6 +19,7 @@
             --danger-color: #ff453a;
             --warning-color: #ff9f0a;
             --border-color: #38383a;
+            --detail-bg: #121212;
         }
 
         body {
@@ -85,9 +86,16 @@
         .tabla-meses tr.mes-row { cursor: pointer; }
         .tabla-meses tr.mes-row:active { background-color: #2c2c2e; }
 
-        .desplegable-detalles { background: #121212; font-size: 0.85rem; color: #d1d1d6; border-radius: 8px; padding: 4px 10px; margin-top: 2px; margin-bottom: 8px; border-left: 2px solid var(--accent-color); }
-        .fila-detalle-dia { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 0.5px solid #2c2c2e; }
-        .fila-detalle-dia:last-child { border-bottom: none; }
+        /* NUEVO DISEÑO ELEGANTE PARA EL DESPLEGABLE DE TARJETAS */
+        .contenedor-desplegable-tarjetas { background: var(--detail-bg); padding: 10px; border-radius: 10px; margin-top: 4px; margin-bottom: 12px; border: 0.5px solid var(--border-color); }
+        .tarjeta-dia-desglosado { background: var(--card-bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3.5px solid var(--border-color); }
+        .tarjeta-dia-desglosado:last-child { margin-bottom: 0; }
+        .tarjeta-dia-desglosado.activo { border-left-color: var(--accent-color); }
+        .tarjeta-dia-desglosado.especial { border-left-color: var(--warning-color); }
+        
+        .tarjeta-linea-superior { display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+        .tarjeta-linea-tramos { font-size: 0.85rem; color: #a9a9b3; margin-bottom: 6px; }
+        .tarjeta-linea-metricas { display: flex; gap: 10px; font-size: 0.75rem; color: #8e8e93; border-top: 0.5px solid #2c2c2e; padding-top: 5px; font-family: monospace; }
 
         .backup-zone { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .backup-buttons-row { display: flex; gap: 12px; }
@@ -308,6 +316,12 @@
         return minOut - minIn;
     }
 
+    function tabularMinsStr(mins) {
+        let pref = mins < 0 ? '-' : '';
+        let abs = Math.abs(mins);
+        return `${pref}${Math.floor(abs/60)}:${String(abs%60).padStart(2,'0')}`;
+    }
+
     function calcularMinutosDeUnDia(fechaStr) {
         const registro = baseDatos[fechaStr];
         if (!registro) return 0;
@@ -329,7 +343,7 @@
         const desgloseContenedor = document.getElementById('desgloseSemanalContenedor');
         desgloseContenedor.innerHTML = '';
 
-        let minutosTotalesSemana = 0;
+        let minutesTotalesSemana = 0;
         let diaBucle = new Date(lunes);
 
         for (let i = 0; i < 7; i++) {
@@ -338,7 +352,7 @@
             const esElDiaSeleccionado = (ISOStr === fechaSeleccionada);
             
             const minsEsteDia = calcularMinutosDeUnDia(ISOStr);
-            minutosTotalesSemana += minsEsteDia;
+            minutesTotalesSemana += minsEsteDia;
 
             let tramosStr = 'Sin registros';
             const reg = baseDatos[ISOStr];
@@ -367,11 +381,11 @@
             diaBucle.setDate(diaBucle.getDate() + 1);
         }
 
-        const hSem = Math.floor(minutosTotalesSemana / 60);
-        const mSem = minutosTotalesSemana % 60;
+        const hSem = Math.floor(minutesTotalesSemana / 60);
+        const mSem = minutesTotalesSemana % 60;
         document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
 
-        const faltanMinutos = (objSemanal * 60) - minutosTotalesSemana;
+        const faltanMinutos = (objSemanal * 60) - minutesTotalesSemana;
         const estadoLabel = document.getElementById('estadoSemana');
 
         if (faltanMinutos > 0) {
@@ -386,7 +400,7 @@
             estadoLabel.style.color = 'var(--success-color)';
         }
 
-        let porcentaje = ((minutosTotalesSemana / 60) / objSemanal) * 100;
+        let porcentaje = ((minutesTotalesSemana / 60) / objSemanal) * 100;
         if (porcentaje > 100) porcentaje = 100;
         document.getElementById('progressBar').style.width = `${porcentaje}%`;
         document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
@@ -396,7 +410,6 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
-        // Histórico fijo e inamovible aprobado de Enero a Mayo (Bolsa antigua 28h)
         let mesesEstaticos = [
             { id: 0, nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
             { id: 1, nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
@@ -411,7 +424,7 @@
             inyectarFilaTabla(m.id, m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        // NUEVA REGLA MATRIZ UNIVERSAL (SOLO APLICABLE A PARTIR DE JUNIO DE 2026 HACIA ADELANTE)
+        // REGLA SOBERANA ACUMULATIVA DE ATALAYA: El teórico solo sube si se ficha entre semana
         let minsFichadosJunio = 0;
         let minsTeoricosJunio = 0;
 
@@ -420,23 +433,22 @@
             let reg = baseDatos[fechaKey];
             
             if (reg) {
-                let minsFichadosDia = calcularMinutosDeUnDia(fechaKey);
-                let esDiaEspecial = reg.incidencia === true;
+                let minsDia = calcularMinutosDeUnDia(fechaKey);
+                let esEspecial = reg.incidencia === true;
                 
                 let dObj = new Date(2026, 5, d); 
                 let diaSemana = dObj.getDay();
-                let esFinDeSemana = (diaSemana === 0 || diaSemana === 6);
+                let esFinde = (diaSemana === 0 || diaSemana === 6);
 
-                if (minsFichadosDia > 0 || esDiaEspecial) {
-                    minsFichadosJunio += minsFichadosDia;
+                if (minsDia > 0 || esEspecial) {
+                    minsFichadosJunio += minsDia;
                     
-                    // REGLA 35 HORAS (A PARTIR DE JUNIO): Fines de semana son estrictamente Teórico 0h.
-                    if (!esFinDeSemana) {
-                        if (!esDiaEspecial) {
-                            minsTeoricosJunio += 7 * 60; // Obligación diaria entre semana
-                        }
+                    if (!esFinde) {
+                        // Entre semana activo -> El teórico suma 7h automáticas al fichar
+                        if (!esEspecial) minsTeoricosJunio += 7 * 60;
                     } else {
-                        minsTeoricosJunio += 0; // Fines de semana acumulan directo a favor
+                        // Fin de semana activo -> El teórico es 0 estricto
+                        minsTeoricosJunio += 0;
                     }
                 }
             }
@@ -445,7 +457,7 @@
         let saldoJunio = minsFichadosJunio - minsTeoricosJunio;
         inyectarFilaTabla(5, 'Junio', minsFichadosJunio, minsTeoricosJunio, saldoJunio);
 
-        // Bolsa Global total acumulada año completo
+        // Bolsa Global total acumulada
         let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunio;
         const panelGlobal = document.getElementById('saldoGlobalTotal');
         
@@ -460,8 +472,7 @@
             panelGlobal.style.color = 'var(--text-color)';
         }
 
-        let absMinutos = Math.abs(saldoGlobalMinutos);
-        panelGlobal.innerText = `${prefijo}${Math.floor(absMinutos/60)}h ${String(absMinutos%60).padStart(2,'0')}m`;
+        panelGlobal.innerText = tabularMinsStr(saldoGlobalMinutos);
     }
 
     function inyectarFilaTabla(idMes, nombre, f, t, dif) {
@@ -469,18 +480,10 @@
         const fStr = `${Math.floor(f/60)}:${String(f%60).padStart(2,'0')}`;
         const tStr = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
         
-        let difStr = '';
+        let difStr = tabularMinsStr(dif);
         let colorDif = 'var(--text-color)';
-        if (dif > 0) {
-            difStr = `+${Math.floor(dif/60)}:${String(dif%60).padStart(2,'0')}`;
-            colorDif = 'var(--success-color)';
-        } else if (dif < 0) {
-            const abs = Math.abs(dif);
-            difStr = `-${Math.floor(abs/60)}:${String(abs%60).padStart(2,'0')}`;
-            colorDif = 'var(--danger-color)';
-        } else {
-            difStr = '0:00';
-        }
+        if (dif > 0) colorDif = 'var(--success-color)';
+        if (dif < 0) colorDif = 'var(--danger-color)';
 
         const tr = document.createElement('tr');
         tr.className = 'mes-row';
@@ -493,13 +496,14 @@
         `;
         cuerpo.appendChild(tr);
 
+        // DESPLEGABLE REFORMADO COMO UN PANEL CONTENEDOR DE TARJETAS LIGERAS
         if (mesAbiertoActual === idMes) {
             const trDesplegable = document.createElement('tr');
             const tdContenedor = document.createElement('td');
             tdContenedor.colSpan = 4;
             
-            const divDetalle = document.createElement('div');
-            divDetalle.className = 'desplegable-detalles';
+            const divContenedorGeneral = document.createElement('div');
+            divContenedorGeneral.className = 'contenedor-desplegable-tarjetas';
             
             let prefijoMes = `2026-${String(idMes+1).padStart(2, '0')}`;
             let diasEncontrados = Object.keys(baseDatos)
@@ -507,47 +511,69 @@
                 .sort();
 
             if (diasEncontrados.length === 0) {
-                divDetalle.innerHTML = '<div style="color:#666; padding:6px 0; text-align:center;">No hay registros guardados en la memoria de este mes.</div>';
+                divContenedorGeneral.innerHTML = '<div style="color:#666; padding:8px 0; text-align:center; font-size:0.85rem;">No hay registros históricos guardados de este mes.</div>';
             } else {
                 diasEncontrados.forEach(fechaKey => {
                     const reg = baseDatos[fechaKey];
                     const [,, dia] = fechaKey.split('-');
                     const dObj = new Date(fechaKey);
                     const nDiaSemana = nombresDias[dObj.getDay()];
+                    const esFinde = (dObj.getDay() === 0 || dObj.getDay() === 6);
 
-                    let tramosTxt = '';
+                    let minsFichadosDia = calcularMinutosDeUnDia(fechaKey);
+                    let minsTeoricosDia = 0;
+
+                    let tramosTxt = 'Sin fichajes';
+                    let claseTipo = '';
+
                     if (reg.incidencia) {
-                        tramosTxt = '<span class="badge-incidencia">DÍA ESPECIAL (LIBRE)</span>';
+                        tramosTxt = '📅 DÍA ESPECIAL (LIBRE)';
+                        claseTipo = 'especial';
+                        minsTeoricosDia = 0;
                     } else if (reg.tramos && reg.tramos.length > 0) {
                         let arr = [];
                         reg.tramos.forEach(t => { if(t.entrada && t.salida) arr.push(`${t.entrada} a ${t.salida}`); });
-                        tramosTxt = arr.length > 0 ? arr.join(' | ') : 'Fichaje incompleto';
-                    } else {
-                        tramosTxt = 'Sin fichajes';
+                        if (arr.length > 0) {
+                            tramosTxt = arr.join(' | ');
+                            claseTipo = 'activo';
+                            minsTeoricosDia = esFinde ? 0 : 7 * 60;
+                        }
                     }
 
-                    const filaDia = document.createElement('div');
-                    filaDia.className = 'fila-detalle-dia';
-                    filaDia.innerHTML = `
-                        <span style="font-weight:500;">${nDiaSemana} ${dia}</span>
-                        <span>${tramosTxt}</span>
+                    // No pintamos tarjetas de días completamente vacíos futuros
+                    if (minsFichadosDia === 0 && !reg.incidencia) return;
+
+                    let saldoDia = minsFichadosDia - minsTeoricosDia;
+                    let colorSaldo = 'var(--text-color)';
+                    if (saldoDia > 0) colorSaldo = 'var(--success-color)';
+                    if (saldoDia < 0) colorSaldo = 'var(--danger-color)';
+
+                    const divTarjeta = document.createElement('div');
+                    divTarjeta.className = `tarjeta-dia-desglosado ${claseTipo}`;
+                    divTarjeta.innerHTML = `
+                        <div class="tarjeta-linea-superior">
+                            <span>${nDiaSemana} ${dia}</span>
+                            <span style="color:${colorSaldo}; font-family:monospace;">${saldoDia >= 0 ? '+' : ''}${tabularMinsStr(saldoDia)}</span>
+                        </div>
+                        <div class="tarjeta-linea-tramos">${tramosTxt}</div>
+                        <div class="tarjeta-linea-metricas">
+                            <span>Fic: ${Math.floor(minsFichadosDia/60)}h ${minsFichadosDia%60}m</span>
+                            <span>Teo: ${Math.floor(minsTeoricosDia/60)}h</span>
+                            <span>Sal: ${tabularMinsStr(saldoDia)}</span>
+                        </div>
                     `;
-                    divDetalle.appendChild(filaDia);
+                    divContenedorGeneral.appendChild(divTarjeta);
                 });
             }
 
-            tdContenedor.appendChild(divDetalle);
+            tdContenedor.appendChild(divContenedorGeneral);
             trDesplegable.appendChild(tdContenedor);
             cuerpo.appendChild(trDesplegable);
         }
     }
 
     function alternarDesplegableMes(idMes) {
-        if (mesAbiertoActual === idMes) {
-            mesAbiertoActual = null;
-        } else {
-            mesAbiertoActual = idMes;
-        }
+        mesAbiertoActual = (mesAbiertoActual === idMes) ? null : idMes;
         dibujarTablaYCalcularGlobal();
     }
 
@@ -559,16 +585,19 @@
         baseDatos["2026-06-08"] = { incidencia: true, tramos: [] };
         baseDatos["2026-06-12"] = { incidencia: true, tramos: [] };
 
-        baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "08:00", salida: "15:00" }] };
-        baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:20", salida: "18:20" }] };
-        baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "08:10", salida: "14:05" }, { entrada: "15:30", salida: "19:00" }] };
-        baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:15", salida: "18:15" }] };
-        baseDatos["2026-06-09"] = { incidencia: false, tramos: [{ entrada: "08:10", salida: "14:05" }] };
-        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "17:30" }, { entrada: "17:42", salida: "19:12" }] };
-        baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:20", salida: "18:20" }] };
-        baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "08:15", salida: "14:15" }, { entrada: "15:15", salida: "18:15" }] };
-        baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "08:20", salida: "14:20" }, { entrada: "15:30", salida: "19:00" }] };
-        baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "08:31", salida: "14:15" }, { entrada: "15:35", salida: "17:35" }] };
+        baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "09:08", salida: "11:48" }, { entrada: "15:40", salida: "20:14" }] };
+        baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:32", salida: "13:29" }, { entrada: "15:40", salida: "20:12" }] };
+        baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "15:41", salida: "20:21" }] };
+        baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "15:44", salida: "20:32" }] };
+        baseDatos["2026-06-06"] = { incidencia: false, tramos: [{ entrada: "14:34", salida: "21:10" }] };
+        baseDatos["2026-06-07"] = { incidencia: false, tramos: [{ entrada: "14:19", salida: "21:13" }] };
+        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "10:26", salida: "15:07" }, { entrada: "15:23", salida: "17:45" }, { entrada: "18:53", salida: "21:47" }] };
+        baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:49", salida: "12:03" }, { entrada: "17:23", salida: "22:06" }] };
+        baseDatos["2026-06-13"] = { incidencia: false, tramos: [{ entrada: "14:25", salida: "20:55" }] };
+        baseDatos["2026-06-14"] = { incidencia: false, tramos: [{ entrada: "10:56", salida: "15:48" }] };
+        baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "13:58", salida: "19:59" }] };
+        baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "10:08", salida: "12:28" }, { entrada: "15:05", salida: "20:00" }] };
+        baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "10:15", salida: "12:28" }, { entrada: "15:11", salida: "20:24" }] };
         baseDatos["2026-06-18"] = { incidencia: false, tramos: [{ entrada: "08:53", salida: "13:46" }, { entrada: "15:01", salida: "19:44" }] };
 
         guardarYActualizar();
