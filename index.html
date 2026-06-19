@@ -4,44 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Horas</title>
-    <!-- Iconos modernos -->
+    <!-- Iconos claros -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tipografía limpia -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    
     <style>
-        :root {
-            --bg-principal: #121824;
-            --bg-tarjeta: #1e293b;
-            --bg-entrada: #0f172a;
-            --texto-primario: #f8fafc;
-            --texto-secundario: #94a3b8;
-            --color-primario: #3b82f6;
-            --color-primario-hover: #2563eb;
-            --color-exito: #10b981;
-            --color-peligro: #ef4444;
-            --borde: #334155;
-            --radio: 12px;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-principal);
-            color: var(--texto-primario);
+            background-color: #f2f2f7; /* Gris muy claro de fondo */
+            color: #1c1c1e; /* Texto casi negro para máximo contraste */
             padding: 16px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
         }
 
         .contenedor {
@@ -54,93 +34,94 @@
 
         header {
             text-align: center;
-            padding: 8px 0;
+            padding: 12px 0 4px 0;
         }
 
         header h1 {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 700;
-            letter-spacing: -0.5px;
+            color: #000000;
         }
 
         header p {
-            color: var(--texto-secundario);
-            font-size: 0.85rem;
-            margin-top: 4px;
+            color: #666666;
+            font-size: 0.9rem;
+            margin-top: 2px;
         }
 
+        /* Tarjetas en fondo BLANCO absoluto para que se vea todo */
         .tarjeta {
-            background-color: var(--bg-tarjeta);
-            border-radius: var(--radio);
+            background-color: #ffffff;
+            border-radius: 12px;
             padding: 20px;
-            border: 1px solid var(--borde);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            border: 1px solid #e5e5ea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        /* Marcador de Estado Actual */
         .estado-actual {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 1px solid var(--borde);
+            border-bottom: 1px solid #e5e5ea;
         }
 
         .estado-etiqueta {
-            font-size: 0.9rem;
-            color: var(--texto-secundario);
+            font-size: 0.95rem;
+            color: #555555;
+            font-weight: 500;
         }
 
         .estado-valor {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.95rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background-color: rgba(255, 255, 255, 0.05);
+            padding: 6px 12px;
+            border-radius: 6px;
         }
 
         .estado-valor.dentro {
-            color: var(--color-exito);
-            background-color: rgba(16, 185, 129, 0.1);
+            color: #147efb; /* Azul vistoso */
+            background-color: #e1f0ff;
         }
 
         .estado-valor.fuera {
-            color: var(--color-peligro);
-            background-color: rgba(239, 68, 68, 0.1);
+            color: #ff3b30; /* Rojo vivo */
+            background-color: #ffe5e5;
         }
 
-        /* Balance Semanal Extragrande */
+        /* Números del Balance GRANDES y legibles */
         .balance-container {
             text-align: center;
-            padding: 12px 0;
+            padding: 8px 0;
         }
 
         .balance-titulo {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--texto-secundario);
-            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+            color: #555555;
+            font-weight: 600;
+            margin-bottom: 4px;
         }
 
         .balance-horas {
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
+            font-size: 3rem; /* Enorme para que se vea de un vistazo */
+            font-weight: 800;
         }
 
-        .balance-horas.positivo { color: var(--color-exito); }
-        .balance-horas.negativo { color: var(--color-peligro); }
+        .balance-horas.positivo { color: #34c759; } /* Verde éxito */
+        .balance-horas.negativo { color: #ff3b30; } /* Rojo peligro */
 
         .sub-balances {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-top: 16px;
-            background-color: rgba(0, 0, 0, 0.15);
+            background-color: #f8f9fa;
             padding: 12px;
             border-radius: 8px;
+            border: 1px solid #e5e5ea;
         }
 
         .sub-balance-item {
@@ -148,66 +129,60 @@
         }
 
         .sub-balance-item p {
-            font-size: 0.75rem;
-            color: var(--texto-secundario);
+            font-size: 0.85rem;
+            color: #555555;
             margin-bottom: 2px;
         }
 
         .sub-balance-item span {
-            font-weight: 600;
-            font-size: 1.05rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #000000;
         }
 
-        /* Botones Principales */
-        .Panel-botones {
+        /* Botones de Fichar */
+        .panel-botones {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 14px;
         }
 
         .btn {
             border: none;
-            border-radius: var(--radio);
-            padding: 16px;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            transition: transform 0.1s, background-color 0.2s;
-            color: white;
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        .btn:active {
-            transform: scale(0.96);
-        }
+        .btn-entrada { background-color: #34c759; } /* Verde claro brillante */
+        .btn-salida { background-color: #ff3b30; } /* Rojo brillante */
 
-        .btn-entrada { background-color: var(--color-exito); }
-        .btn-entrada:hover { background-color: #059669; }
+        .btn i { font-size: 1.6rem; }
 
-        .btn-salida { background-color: var(--color-peligro); }
-        .btn-salida:hover { background-color: #dc2626; }
-
-        .btn i { font-size: 1.4rem; }
-
-        /* Formularios y Ajustes Manuales */
+        /* Formulario Manual */
         .grupo-formulario {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .seccion-titulo {
-            font-size: 1rem;
-            font-weight: 600;
+            font-size: 1.1rem;
+            font-weight: 700;
             margin-bottom: 12px;
+            color: #000000;
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--texto-primario);
         }
 
         .control-input {
@@ -217,105 +192,104 @@
         }
 
         .control-input label {
-            font-size: 0.8rem;
-            color: var(--texto-secundario);
-            font-weight: 500;
+            font-size: 0.9rem;
+            color: #333333;
+            font-weight: 600;
         }
 
         input[type="date"], input[type="time"] {
-            background-color: var(--bg-entrada);
-            border: 1px solid var(--borde);
-            color: var(--texto-primario);
+            background-color: #ffffff;
+            border: 2px solid #c7c7cc; /* Borde bien marcado */
+            color: #000000;
             padding: 12px;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             width: 100%;
             outline: none;
-            transition: border-color 0.2s;
         }
 
-        input:focus {
-            border-color: var(--color-primario);
+        input[type="date"]:focus, input[type="time"]:focus {
+            border-color: #007aff;
         }
 
         .btn-accion {
-            background-color: var(--color-primario);
+            background-color: #007aff; /* Azul estándar corporativo */
             border: none;
             color: white;
-            padding: 12px;
+            padding: 14px;
             border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             width: 100%;
-            margin-top: 8px;
+            margin-top: 6px;
         }
-        .btn-accion:hover { background-color: var(--color-primario-hover); }
 
         .checkbox-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             margin-top: 4px;
             cursor: pointer;
-            font-size: 0.9rem;
-            user-select: none;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 6px 0;
         }
 
         .checkbox-container input {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
+            width: 22px; /* Checkbox más grande para acertar con el dedo */
+            height: 22px;
         }
 
-        /* Historial / Registros Recientes */
+        /* Lista de Historial en alto contraste */
         .lista-registros {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-height: 220px;
+            gap: 10px;
+            max-height: 250px;
             overflow-y: auto;
-            padding-right: 4px;
         }
 
-        /* Scrollbar fina para móviles */
-        .lista-registros::-webkit-scrollbar { width: 4px; }
-        .lista-registros::-webkit-scrollbar-thumb { background: var(--borde); border-radius: 4px; }
-
         .registro-item {
-            background-color: var(--bg-entrada);
-            border: 1px solid var(--borde);
-            padding: 10px 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #d1d1d6;
+            padding: 12px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
         }
 
         .registro-info {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
         }
 
-        .registro-fecha { font-weight: 500; }
-        .registro-tipo { font-size: 0.75rem; color: var(--texto-secundario); }
+        .registro-fecha { 
+            font-weight: 700; 
+            font-size: 0.95rem;
+            color: #000000;
+        }
+        
+        .registro-tipo { 
+            font-size: 0.9rem; 
+            color: #3a3a3c;
+            font-weight: 500;
+        }
 
         .btn-eliminar {
             background: none;
             border: none;
-            color: var(--texto-secundario);
+            color: #ff3b30;
             cursor: pointer;
-            padding: 4px;
-            font-size: 0.9rem;
-            transition: color 0.2s;
+            padding: 8px 12px;
+            font-size: 1.1rem;
         }
-        .btn-eliminar:hover { color: var(--color-peligro); }
     </style>
 </head>
 <body>
@@ -323,7 +297,7 @@
 <div class="contenedor">
     
     <header>
-        <h1><i class="fa-solid fa-clock-num" style="color: var(--color-primario); margin-right: 6px;"></i>Mis Fichajes</h1>
+        <h1><i class="fa-solid fa-clock" style="color: #007aff; margin-right: 6px;"></i>Mis Fichajes</h1>
         <p>Control Horario Personal</p>
     </header>
 
@@ -346,7 +320,7 @@
             </div>
             <div class="sub-balance-item">
                 <p>Teórico Acumulado</p>
-                <span id="horas-teoricas" style="color: var(--texto-secundario);">0.00h</span>
+                <span id="horas-teoricas">0.00h</span>
             </div>
         </div>
     </div>
@@ -354,11 +328,11 @@
     <!-- BOTONES DE ACCIÓN RÁPIDA -->
     <div class="panel-botones">
         <button class="btn btn-entrada" onclick="registrarFichaje('Entrada')">
-            <i class="fa-solid fa-right-to-bracket"></i>
+            <i class="fa-solid fa-play"></i>
             Entrada
         </button>
         <button class="btn btn-salida" onclick="registrarFichaje('Salida')">
-            <i class="fa-solid fa-right-from-bracket"></i>
+            <i class="fa-solid fa-stop"></i>
             Salida
         </button>
     </div>
@@ -366,8 +340,8 @@
     <!-- REGISTRO MANUAL / EXCEPCIONES -->
     <div class="tarjeta">
         <div class="seccion-titulo">
-            <i class="fa-solid fa-calendar-plus" style="color: var(--color-primario);"></i>
-            Añadir Fichaje Manual o Especial
+            <i class="fa-solid fa-pen-to-square" style="color: #007aff;"></i>
+            Añadir Registro Manual
         </div>
         
         <div class="grupo-formulario">
@@ -383,22 +357,21 @@
                 </div>
                 <div class="control-input" style="flex: 1;">
                     <label for="tipo">Tipo</label>
-                    <!-- Truco para usar un input estilizado o select si prefieres, mantengo el select original -->
                     <input type="hidden" id="tipo" value="Entrada">
-                    <div style="display: flex; gap: 4px; margin-top: auto; height: 46px;">
-                        <button type="button" id="btn-tipo-e" class="btn-accion" style="margin:0; background: var(--bg-entrada); border: 1px solid var(--borde); color: var(--color-exito)" onclick="setTipoManual('Entrada')">E</button>
-                        <button type="button" id="btn-tipo-s" class="btn-accion" style="margin:0; background: var(--bg-entrada); border: 1px solid var(--borde); color: var(--texto-secundario)" onclick="setTipoManual('Salida')">S</button>
+                    <div style="display: flex; gap: 6px; margin-top: auto; height: 48px;">
+                        <button type="button" id="btn-tipo-e" class="btn-accion" style="margin:0; background: #ffffff; border: 2px solid #34c759; color: #34c759" onclick="setTipoManual('Entrada')">Entrada</button>
+                        <button type="button" id="btn-tipo-s" class="btn-accion" style="margin:0; background: #ffffff; border: 2px solid #666666; color: #666666" onclick="setTipoManual('Salida')">Salida</button>
                     </div>
                 </div>
             </div>
 
             <label class="checkbox-container">
                 <input type="checkbox" id="dia-especial" onchange="toggleDiaEspecial()">
-                <span>Marcar como día especial (No cuenta teórico)</span>
+                <span>Marcar como día especial (No resta)</span>
             </label>
 
             <button class="btn-accion" onclick="agregarManual()">
-                <i class="fa-solid fa-plus"></i> Guardar Registro
+                <i class="fa-solid fa-plus"></i> Guardar en Historial
             </button>
         </div>
     </div>
@@ -406,8 +379,8 @@
     <!-- ÚLTIMOS MOVIMIENTOS -->
     <div class="tarjeta">
         <div class="seccion-titulo">
-            <i class="fa-solid fa-list-ul" style="color: var(--texto-secundario);"></i>
-            Últimos Movimientos
+            <i class="fa-solid fa-history" style="color: #555555;"></i>
+            Historial de Movimientos
         </div>
         <div id="lista-registros" class="lista-registros">
             <!-- Los elementos se inyectan dinámicamente -->
@@ -417,34 +390,30 @@
 </div>
 
 <script>
-    // Configuración base de la jornada
     const HORAS_SEMANALES_OBLIGATORIAS = 35;
     const HORAS_DIARIAS_TEORICAS = HORAS_SEMANALES_OBLIGATORIAS / 7; // 5 horas
 
-    // Cargar datos iniciales
     let registros = JSON.parse(localStorage.getItem('fichajes')) || [];
     let diasEspeciales = JSON.parse(localStorage.getItem('diasEspeciales')) || [];
 
-    // Iniciar inputs con fecha actual por comodidad
     document.getElementById('fecha').valueAsDate = new Date();
     
-    // Helper para cambiar tipo manual visualmente
     function setTipoManual(tipo) {
         document.getElementById('tipo').value = tipo;
         const btnE = document.getElementById('btn-tipo-e');
         const btnS = document.getElementById('btn-tipo-s');
         if(tipo === 'Entrada') {
-            btnE.style.color = 'var(--color-exito)'; btnE.style.borderColor = 'var(--color-exito)';
-            btnS.style.color = 'var(--texto-secundario)'; btnS.style.borderColor = 'var(--borde)';
+            btnE.style.backgroundColor = '#34c759'; btnE.style.color = '#ffffff';
+            btnS.style.backgroundColor = '#ffffff'; btnS.style.color = '#666666'; btnS.style.borderColor = '#666666';
         } else {
-            btnS.style.color = 'var(--color-peligro)'; btnS.style.borderColor = 'var(--color-peligro)';
-            btnE.style.color = 'var(--texto-secundario)'; btnE.style.borderColor = 'var(--borde)';
+            btnS.style.backgroundColor = '#ff3b30'; btnS.style.color = '#ffffff'; btnS.style.borderColor = '#ff3b30';
+            btnE.style.backgroundColor = '#ffffff'; btnE.style.color = '#34c759';
         }
     }
 
     function toggleDiaEspecial() {
         const esEspecial = document.getElementById('dia-especial').checked;
-        document.getElementById('inputs-tiempo-normal').style.opacity = esEspecial ? '0.4' : '1';
+        document.getElementById('inputs-tiempo-normal').style.opacity = esEspecial ? '0.3' : '1';
         document.getElementById('hora').disabled = esEspecial;
     }
 
@@ -470,7 +439,7 @@
         const fecha = document.getElementById('fecha').value;
         const esEspecial = document.getElementById('dia-especial').checked;
 
-        if (!fecha) return alert('Por favor, selecciona una fecha.');
+        if (!fecha) return alert('Selecciona una fecha.');
 
         if (esEspecial) {
             if (!diasEspeciales.includes(fecha)) {
@@ -479,7 +448,7 @@
         } else {
             const hora = document.getElementById('hora').value;
             const tipo = document.getElementById('tipo').value;
-            if (!hora) return alert('Por favor, selecciona una hora.');
+            if (!hora) return alert('Selecciona una hora.');
 
             registros.push({
                 id: Date.now(),
@@ -489,7 +458,6 @@
             });
         }
 
-        // Resetear form
         document.getElementById('hora').value = '';
         document.getElementById('dia-especial').checked = false;
         toggleDiaEspecial();
@@ -508,10 +476,8 @@
     }
 
     function actualizarInterfaz() {
-        // Ordenar registros cronológicamente
         registros.sort((a, b) => new Date(`${a.fecha}T${a.hora}`) - new Date(`${b.fecha}T${b.hora}`));
 
-        // 1. Calcular estado actual (¿dentro o fuera?)
         const badge = document.getElementById('estado-badge');
         if (registros.length > 0 && registros[registros.length - 1].tipo === 'Entrada') {
             badge.textContent = "Trabajando";
@@ -521,7 +487,6 @@
             badge.className = "estado-valor fuera";
         }
 
-        // 2. Procesar Cálculos de Tiempos
         let totalMinutosTrabajados = 0;
         let mapaDiasTrabajados = new Set();
         let entradasAbiertas = {};
@@ -542,7 +507,6 @@
 
         function entriesExist(obj, key) { return obj[key] && obj[key].length > 0; }
 
-        // Unir todos los días que restan teórico (días con registros + días especiales marcados)
         let todosLosDiasRelevantes = new Set([...mapaDiasTrabajados, ...diasEspeciales]);
         let diasQueRestanTeorico = 0;
 
@@ -552,12 +516,10 @@
             }
         });
 
-        // Totales finales
         let horasReales = totalMinutosTrabajados / 60;
         let horasTeoricasAcumuladas = diasQueRestanTeorico * HORAS_DIARIAS_TEORICAS;
         let balanceHoras = horasReales - horasTeoricasAcumuladas;
 
-        // Renderizar contadores en pantalla
         document.getElementById('horas-reales').textContent = `${horasReales.toFixed(2)}h`;
         document.getElementById('horas-teoricas').textContent = `${horasTeoricasAcumuladas.toFixed(2)}h`;
 
@@ -570,11 +532,9 @@
         balanceEl.textContent = `${signo}${String(horasFinales).padStart(2, '0')}:${String(minFinales).padStart(2, '0')}`;
         balanceEl.className = `balance-horas ${balanceHoras >= 0 ? 'positivo' : 'negativo'}`;
 
-        // 3. Pintar Historial Integrado (Movimientos + Días Especiales)
         const lista = document.getElementById('lista-registros');
         lista.innerHTML = '';
 
-        // Creamos una lista unificada para visualización
         let itemsHistorial = [];
         
         registros.forEach(r => {
@@ -590,12 +550,11 @@
             itemsHistorial.push({
                 id: d,
                 fecha: d,
-                texto: `⭐ Día Especial (No resta teórico)`,
+                texto: `⭐ Día Especial (No resta)`,
                 action: `eliminarDiaEspecial('${d}')`
             });
         });
 
-        // Ordenar el historial del más reciente al más antiguo para verlo mejor
         itemsHistorial.sort((a, b) => new Date(b.fecha) - new Date(a.fecha) || b.id - a.id);
 
         itemsHistorial.forEach(item => {
@@ -607,7 +566,7 @@
                     <span class="registro-tipo">${item.texto}</span>
                 </div>
                 <button class="btn-eliminar" onclick="${item.action}">
-                    <i class="fa-solid fa-trash"></i>
+                    <i class="fa-solid fa-trash-can"></i>
                 </button>
             `;
             lista.appendChild(div);
@@ -619,7 +578,6 @@
         return new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-ES', opciones);
     }
 
-    // Carga inicial
     actualizarInterfaz();
     setTipoManual('Entrada');
 </script>
