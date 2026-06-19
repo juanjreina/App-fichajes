@@ -102,9 +102,9 @@
 
 <div class="container">
     <div class="card card-global">
-        <div class="section-title" style="color: var(--accent-color);">Bolsa de Horas Total (2026)</div>
+        <div class="section-title" style="color: var(--accent-color);">Bolsa de Horas Total Acumulada</div>
         <div style="font-size: 1.8rem; font-weight: 700; margin: 4px 0;" id="saldoGlobalTotal">0:00</div>
-        <div style="font-size: 0.8rem; color: #8e8e93;" id="detalleGlobal">Desde el 1 de Enero hasta hoy</div>
+        <div style="font-size: 0.8rem; color: #8e8e93;">Saldo neto acumulado ajustado dinámicamente</div>
     </div>
 
     <div class="card">
@@ -355,7 +355,7 @@
         }
 
         const hSem = Math.floor(minutosTotalesSemana / 60);
-        const mSem = minutosTotalesSemana % 60;
+        const mSem = minutesTotalesSemana % 60;
         document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
 
         const faltanMinutos = (objSemanal * 60) - minutosTotalesSemana;
@@ -383,6 +383,7 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
+        // Histórico fijo e inamovible de Enero a Mayo (Clavado con tu Intranet)
         let mesesEstaticos = [
             { nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
             { nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
@@ -397,39 +398,43 @@
             inyectarFilaTabla(m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
+        // CÓMPUTO DINÁMICO DE JUNIO COMPLETO HASTA EL DÍA DE HOY
         let minsFichadosJunio = 0;
         let minsTeoricosJunioHastaHoy = 0;
 
-        const hoy = new Date();
-        const hoyISO = formatearFechaLocalISO(hoy);
-        const ultimoDiaMes = new Date(2026, 6, 0).getDate(); 
+        // Obtenemos la fecha de hoy de forma limpia
+        let hoyObjeto = new Date();
+        let hoyISO = formatearFechaLocalISO(hoyObjeto);
 
-        for (let d = 1; d <= ultimoDiaMes; d++) {
-            let dObjeto = new Date(2026, 5, d); 
-            let ISO = formatearFechaLocalISO(dObjeto);
+        // Recorremos desde el día 1 de junio hasta el día de HOY inclusive
+        let diaCorriente = new Date(2026, 5, 1); // 1 de Junio
+        while (formatearFechaLocalISO(diaCorriente) <= hoyISO) {
+            let ISO = formatearFechaLocalISO(diaCorriente);
+            let dayOfWeek = diaCorriente.getDay();
 
-            minsFichadosJunio += calcularMinutosDeUnDia(ISO);
-
-            // REGLA CLAVE ATALAYA: El teórico solo avanza hasta el día actual
-            if (ISO <= hoyISO) {
-                let dayOfWeek = dObjeto.getDay();
-                const reg = baseDatos[ISO] || { incidencia: false };
-
-                // Si es un día laborable de lunes a viernes (1 al 5)
-                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    // Si NO está marcado como libre/incidencia especial, le sumamos las 7 horas exigidas
-                    if (!reg.incidencia) {
-                        minsTeoricosJunioHastaHoy += 7 * 60;
-                    }
-                    // Si ESTÁ marcado como día especial, el teórico cuenta como 0h automáticamente
+            // Si es laborable (Lunes a Viernes) sumamos su teórico base de 7h SI NO es incidencia
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                const reg = baseDatos[ISO];
+                if (!reg || !reg.incidencia) {
+                    minsTeoricosJunioHastaHoy += 7 * 60; // Añade 7h
                 }
+            }
+            
+            diaCorriente.setDate(diaCorriente.getDate() + 1);
+        }
+
+        // El fichado recorre todo junio para capturar cualquier tramo introducido
+        for (let fechaKey in baseDatos) {
+            if (fechaKey.startsWith('2026-06-')) {
+                minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
             }
         }
 
-        let saldoJunioDinamico = minsFichadosJunio - minsTeoricosJunioHastaHoy;
-        inyectarFilaTabla('Junio', minsFichadosJunio, minsTeoricosJunioHastaHoy, saldoJunioDinamico);
+        let saldoJunio = minsFichadosJunio - minsTeoricosJunioHastaHoy;
+        inyectarFilaTabla('Junio', minsFichadosJunio, minsTeoricosJunioHastaHoy, saldoJunio);
 
-        let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunioDinamico;
+        // BOLSA GLOBAL TOTAL ACUMULADA DESDE ENERO
+        let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunio;
         const panelGlobal = document.getElementById('saldoGlobalTotal');
         
         let prefijo = '';
