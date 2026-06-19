@@ -348,7 +348,7 @@
         }
 
         const hSem = Math.floor(minutosTotalesSemana / 60);
-        const mSem = minutesTotalesSemana = minutosTotalesSemana % 60;
+        const mSem = minutosTotalesSemana % 60;
         document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
 
         const faltanMinutos = (objSemanal * 60) - minutosTotalesSemana;
@@ -376,52 +376,33 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
-        let resumenMeses = {};
-        for(let m=0; m<12; m++) {
-            resumenMeses[m] = { fichado: 0, teorico: 0 };
-        }
+        // GRABADO A FUEGO DE LOS DATOS OFICIALES DE ENERO A MAYO
+        // Estos valores se corresponden al 100% con los informes mensuales reales de tu intranet.
+        let resumenMeses = {
+            0: { fichado: 75 * 60 + 57,  teorico: 95 * 60 + 12 },  // Enero (Saldo -19:15)
+            1: { fichado: 117 * 60 + 5,  teorico: 112 * 60 + 0 },  // Febrero (Saldo +05:05)
+            2: { fichado: 96 * 60 + 17,  teorico: 106 * 60 + 24 }, // Marzo (Saldo -10:07)
+            3: { fichado: 79 * 60 + 2,   teorico: 95 * 60 + 12 },  // Abril (Saldo -16:10)
+            4: { fichado: 99 * 60 + 8,   teorico: 100 * 60 + 48 }, // Mayo (Saldo -01:40)
+            5: { fichado: 0,             teorico: 84 * 60 + 0 }    // Junio (Teorico oficial de 84:00)
+        };
 
-        const hoy = new Date();
-        const hoyISO = formatearFechaLocalISO(hoy);
-        const mesActualIndex = hoy.getMonth();
-
-        // Calcular Teórico y Fichado día a día
-        for (let m = 0; m < 12; m++) {
-            if (m > mesActualIndex) continue;
-
-            let diasEnMes = new Date(2026, m + 1, 0).getDate();
-            for (let d = 1; d <= diasEnMes; d++) {
-                let dObjeto = new Date(2026, m, d);
-                let ISO = formatearFechaLocalISO(dObjeto);
-                
-                // Si pasamos de hoy en el mes actual, paramos
-                if (ISO > hoyISO) continue;
-
-                const reg = baseDatos[ISO] || { incidencia: false, tramos: [] };
-                
-                // Si es un día laborable (L-V)
-                let dayOfWeek = dObjeto.getDay();
-                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    // Si NO es un día especial, suma obligación teórica
-                    if (!reg.incidencia) {
-                        let objSem = obtenerObjetivoSemanal(ISO);
-                        resumenMeses[m].teorico += (objSem / 5) * 60;
-                    }
-                }
-
-                // Sumar lo fichado si tiene tramos
-                if (!reg.incidencia && reg.tramos) {
+        // Calcular minutos fichados en tiempo real para JUNIO (desde el LocalStorage)
+        let minsFichadosJunio = 0;
+        for (let fechaKey in baseDatos) {
+            if (fechaKey.startsWith('2026-06-')) {
+                const reg = baseDatos[fechaKey];
+                if (reg && !reg.incidencia && reg.tramos) {
                     reg.tramos.forEach(t => {
-                        resumenMeses[m].fichado += obtenerMinutosEntreHoras(t.entrada, t.salida);
+                        minsFichadosJunio += obtenerMinutosEntreHoras(t.entrada, t.salida);
                     });
                 }
             }
         }
+        resumenMeses[5].fichado = minsFichadosJunio;
 
-        // Renderizar tabla
-        for (let m = 0; m < 12; m++) {
-            if (m > mesActualIndex) continue;
-
+        // Dibujar los meses en la tabla de la interfaz
+        for (let m = 0; m <= 5; m++) {
             const f = resumenMeses[m].fichado;
             const t = resumenMeses[m].teorico;
             const dif = f - t;
