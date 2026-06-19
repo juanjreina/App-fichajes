@@ -171,10 +171,6 @@
     const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    let dV2 = localStorage.getItem('registro_calendario_v2');
-    let dV3 = localStorage.getItem('registro_calendario_v3');
-    if (dV2 && !dV3) localStorage.setItem('registro_calendario_v3', dV2);
-
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
     let modoBackup = '';
 
@@ -189,12 +185,10 @@
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     }
 
-    function establecerFechaDeHoy() {
-        document.getElementById('fechaActual').value = formatearFechaLocalISO(new Date());
-    }
-
     function inicializar() {
-        if (!document.getElementById('fechaActual').value) establecerFechaDeHoy();
+        if (!document.getElementById('fechaActual').value) {
+            document.getElementById('fechaActual').value = formatearFechaLocalISO(new Date());
+        }
         cargarDiaActual();
     }
 
@@ -206,14 +200,13 @@
         const btnInc = document.querySelector('.btn-incidencia');
         contenedor.innerHTML = '';
 
-        const registroDia = baseDatos[fecha] || { incidencia: false, tramos: [] };
-        
+        if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, tramos: [] };
         if (Array.isArray(baseDatos[fecha])) {
             baseDatos[fecha] = { incidencia: false, tramos: baseDatos[fecha] };
         }
 
-        if (baseDatos[fecha] && baseDatos[fecha].incidencia) {
-            contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUTADO</div>';
+        if (baseDatos[fecha].incidencia) {
+            contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUTADO (0h)</div>';
             btnInc.innerText = '❌ Quitar Día Especial';
             btnInc.style.background = '#4c1d1d';
             btnInc.style.color = 'var(--danger-color)';
@@ -224,8 +217,7 @@
             btnInc.style.color = 'var(--warning-color)';
             document.querySelector('.btn-add').style.display = 'block';
 
-            const tramos = (baseDatos[fecha] && baseDatos[fecha].tramos) ? baseDatos[fecha].tramos : [];
-
+            const tramos = baseDatos[fecha].tramos || [];
             if (tramos.length === 0) {
                 contenedor.innerHTML = '<div style="text-align:center; color:#666; font-size:0.9rem; padding: 5px 0; margin-bottom:10px;">No hay fichajes manuales este día.</div>';
             } else {
@@ -249,9 +241,6 @@
 
     function alternarIncidencia() {
         const fecha = document.getElementById('fechaActual').value;
-        if (!baseDatos[fecha] || Array.isArray(baseDatos[fecha])) {
-            baseDatos[fecha] = { incidencia: false, tramos: [] };
-        }
         baseDatos[fecha].incidencia = !baseDatos[fecha].incidencia;
         if (baseDatos[fecha].incidencia) baseDatos[fecha].tramos = [];
         guardarYActualizar();
@@ -259,7 +248,7 @@
 
     function agregarTramoVacio() {
         const fecha = document.getElementById('fechaActual').value;
-        if (!baseDatos[fecha] || Array.isArray(baseDatos[fecha])) baseDatos[fecha] = { incidencia: false, tramos: [] };
+        if (!baseDatos[fecha].tramos) baseDatos[fecha].tramos = [];
         baseDatos[fecha].tramos.push({ entrada: '', salida: '' });
         guardarYActualizar();
     }
@@ -300,20 +289,9 @@
     }
 
     function calcularMinutosDeUnDia(fechaStr) {
-        let mins = 0;
         const registro = baseDatos[fechaStr];
-        if (!registro) return 0;
-        
-        if (Array.isArray(registro)) {
-            registro.forEach(t => mins += obtenerMinutosEntreHoras(t.entrada, t.salida));
-            return mins;
-        }
-
-        if (registro.incidencia) {
-            const objSem = obtenerObjetivoSemanal(fechaStr);
-            return (objSem / 5) * 60;
-        }
-
+        if (!registro || registro.incidencia) return 0;
+        let mins = 0;
         if (registro.tramos) {
             registro.tramos.forEach(t => mins += obtenerMinutosEntreHoras(t.entrada, t.salida));
         }
@@ -344,17 +322,12 @@
 
             let tramosStr = 'Sin registros';
             const reg = baseDatos[ISOStr];
-            if (reg) {
-                if (reg.incidencia || (Array.isArray(reg) && reg.incidencia)) {
-                    tramosStr = '<span class="badge-incidencia">DÍA ESPECIAL</span>';
-                } else {
-                    let arr = Array.isArray(reg) ? reg : reg.tramos;
-                    if (arr && arr.length > 0) {
-                        let tTxt = [];
-                        arr.forEach(t => { if(t.entrada && t.salida) tTxt.push(`${t.entrada} a ${t.salida}`)});
-                        if (tTxt.length > 0) tramosStr = tTxt.join(' | ');
-                    }
-                }
+            if (reg && reg.incidencia) {
+                tramosStr = '<span class="badge-incidencia">DÍA ESPECIAL (LIBRE)</span>';
+            } else if (reg && reg.tramos && reg.tramos.length > 0) {
+                let tTxt = [];
+                reg.tramos.forEach(t => { if(t.entrada && t.salida) tTxt.push(`${t.entrada} a ${t.salida}`)});
+                if (tTxt.length > 0) tramosStr = tTxt.join(' | ');
             }
 
             const hE = Math.floor(minsEsteDia / 60);
@@ -375,7 +348,7 @@
         }
 
         const hSem = Math.floor(minutosTotalesSemana / 60);
-        const mSem = minutosTotalesSemana % 60;
+        const mSem = minutesTotalesSemana = minutosTotalesSemana % 60;
         document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
 
         const faltanMinutos = (objSemanal * 60) - minutosTotalesSemana;
@@ -412,40 +385,42 @@
         const hoyISO = formatearFechaLocalISO(hoy);
         const mesActualIndex = hoy.getMonth();
 
-        // 1. Calcular el teórico basado ÚNICAMENTE en los días transcurridos hasta HOY
+        // Calcular Teórico y Fichado día a día
         for (let m = 0; m < 12; m++) {
-            if (m > mesActualIndex) continue; // Meses futuros se quedan a 0 absoluto
+            if (m > mesActualIndex) continue;
 
             let diasEnMes = new Date(2026, m + 1, 0).getDate();
             for (let d = 1; d <= diasEnMes; d++) {
                 let dObjeto = new Date(2026, m, d);
                 let ISO = formatearFechaLocalISO(dObjeto);
                 
-                // Si el día evaluado es posterior al día de hoy, dejamos de sumar teórico
+                // Si pasamos de hoy en el mes actual, paramos
                 if (ISO > hoyISO) continue;
 
+                const reg = baseDatos[ISO] || { incidencia: false, tramos: [] };
+                
+                // Si es un día laborable (L-V)
                 let dayOfWeek = dObjeto.getDay();
                 if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    let objSem = obtenerObjetivoSemanal(ISO);
-                    resumenMeses[m].teorico += (objSem / 5) * 60;
+                    // Si NO es un día especial, suma obligación teórica
+                    if (!reg.incidencia) {
+                        let objSem = obtenerObjetivoSemanal(ISO);
+                        resumenMeses[m].teorico += (objSem / 5) * 60;
+                    }
+                }
+
+                // Sumar lo fichado si tiene tramos
+                if (!reg.incidencia && reg.tramos) {
+                    reg.tramos.forEach(t => {
+                        resumenMeses[m].fichado += obtenerMinutosEntreHoras(t.entrada, t.salida);
+                    });
                 }
             }
         }
 
-        // 2. Sumar los minutos reales fichados en la base de datos
-        for (let fechaKey in baseDatos) {
-            if (fechaKey.startsWith('2026-')) {
-                const [,, mm] = fechaKey.split('-').map(Number);
-                const mesIndex = mm - 1;
-                if (resumenMeses[mesIndex]) {
-                    resumenMeses[mesIndex].fichado += calcularMinutosDeUnDia(fechaKey);
-                }
-            }
-        }
-
-        // 3. Renderizar las filas de la tabla
+        // Renderizar tabla
         for (let m = 0; m < 12; m++) {
-            if (m > mesActualIndex) continue; // No dibuja meses futuros
+            if (m > mesActualIndex) continue;
 
             const f = resumenMeses[m].fichado;
             const t = resumenMeses[m].teorico;
@@ -481,16 +456,16 @@
     function mostrarExportar() {
         modoBackup = 'exportar';
         document.getElementById('panelBackup').style.display = 'block';
-        document.getElementById('backupTitle').innerText = 'Copia generada. Cópiala desde aquí:';
+        document.getElementById('backupTitle').innerText = 'Copia generada:';
         document.getElementById('txtBackup').value = JSON.stringify(baseDatos);
-        document.getElementById('btnAccionBackup').innerText = 'Entendido / Cerrar';
+        document.getElementById('btnAccionBackup').innerText = 'Entendido';
         document.getElementById('txtBackup').select();
     }
 
     function mostrarImportar() {
         modoBackup = 'importar';
         document.getElementById('panelBackup').style.display = 'block';
-        document.getElementById('backupTitle').innerText = 'Pega tu copia de seguridad aquí:';
+        document.getElementById('backupTitle').innerText = 'Pega la copia aquí:';
         document.getElementById('txtBackup').value = '';
         document.getElementById('btnAccionBackup').innerText = 'Restaurar Datos';
     }
@@ -500,14 +475,11 @@
             const texto = document.getElementById('txtBackup').value;
             if (texto) {
                 try {
-                    const json = JSON.parse(texto);
-                    if (typeof json === 'object') {
-                        baseDatos = json;
-                        localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
-                        inicializar();
-                        alert('¡Datos restaurados con éxito!');
-                    }
-                } catch(e) { alert('Error: El texto introducido no es válido.'); }
+                    baseDatos = JSON.parse(texto);
+                    localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+                    inicializar();
+                    alert('¡Datos sincronizados!');
+                } catch(e) { alert('Error en el texto.'); }
             }
         }
         document.getElementById('panelBackup').style.display = 'none';
