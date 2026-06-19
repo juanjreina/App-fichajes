@@ -33,7 +33,7 @@
 
         .app-header {
             width: 100%; padding-top: calc(15px + env(safe-area-inset-top)); padding-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; padding-x: 16px;
+            display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
             background-color: #121212; border-bottom: 0.5px solid var(--border-color);
             position: sticky; top: 0; z-index: 10; padding-left: 16px; padding-right: 16px;
         }
@@ -83,18 +83,11 @@
         .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
         .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
 
-        .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); }
-        .thermometer-day:last-child { border-bottom: none; }
-        .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; }
-        .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; }
-
-        /* Estructura Limpia de Tabla Mensual (Estatica) */
         .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
         .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
         .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
         .col-right { text-align: right; }
 
-        /* Nuevo Bloque de Detalle Historial Diario */
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
         .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
@@ -230,9 +223,8 @@
     
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
     
-    // Estado interno para saber qué mes está visualizando el usuario en el bloque de detalle diario
     let historialAñoActivo = 2026;
-    let historialMesActivo = 5; // Arranca por defecto en Junio (index 5)
+    let historialMesActivo = 5; 
 
     function obtenerObjetivoSemanal(fechaStr) {
         const [yyyy, mm] = fechaStr.split('-').map(Number);
@@ -250,7 +242,6 @@
             document.getElementById('fechaActual').value = formatearFechaLocalISO(new Date());
         }
         
-        // Sincronizar el mes inicial del visor diario con el del input fecha por comodidad
         const [y, m] = document.getElementById('fechaActual').value.split('-').map(Number);
         historialAñoActivo = y;
         historialMesActivo = m - 1;
@@ -471,26 +462,31 @@
         let minsTeoricosJunio = 84 * 60; 
         let minsFichadosJunio = 0;
 
+        // 1. Sumamos los minutos fichados de todo Junio completo
         for (let d = 1; d <= 30; d++) {
             let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
             minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
         }
 
+        // 2. CORRECCIÓN SOBERANA: Calculamos el teórico fijo del 18 en adelante sin depender de si has fichado o no
+        const fechaHoy = new Date();
+        const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
+
         for (let d = 18; d <= 30; d++) {
             let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
             let reg = baseDatos[fechaKey];
             
-            if (reg) {
-                let minsDia = calcularMinutosDeUnDia(fechaKey);
-                let esEspecial = reg.incidencia === true;
-                
-                let dObj = new Date(2026, 5, d); 
-                let diaSemana = dObj.getDay();
-                let esFinde = (diaSemana === 0 || diaSemana === 6);
+            let dObj = new Date(2026, 5, d); 
+            let diaSemana = dObj.getDay();
+            let esFinde = (diaSemana === 0 || diaSemana === 6);
 
-                if ((minsDia > 0 || esEspecial) && !esFinde) {
+            if (!esFinde) {
+                // Si el día ya ha llegado (pasado o es hoy), o tiene registros futuros, computa en el teórico
+                let tieneFichajeFuturo = reg && (calcularMinutosDeUnDia(fechaKey) > 0 || reg.incidencia === true);
+                if (d <= diaHoyJunio || tieneFichajeFuturo) {
+                    let esEspecial = reg && reg.incidencia === true;
                     if (!esEspecial) {
-                        minsTeoricosJunio += 7 * 60;
+                        minsTeoricosJunio += 7 * 60; // Suma obligatoria fija sin trampas
                     }
                 }
             }
@@ -533,7 +529,6 @@
         cuerpo.appendChild(tr);
     }
 
-    // NUEVA LOGICA: Controla y dibuja la lista del bloque diario por mes natural
     function navegarMesHistorial(direccion) {
         historialMesActivo += direccion;
         if (historialMesActivo > 11) {
@@ -551,9 +546,11 @@
         const cuerpoDiario = document.getElementById('cuerpoDiarioHistorial');
         cuerpoDiario.innerHTML = '';
 
-        // Obtenemos los días totales del mes seleccionado
         const totalDiasMes = new Date(historialAñoActivo, historialMesActivo + 1, 0).getDate();
         let tieneRegistros = false;
+
+        const fechaHoy = new Date();
+        const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
 
         for (let d = 1; d <= totalDiasMes; d++) {
             let fechaKey = `${historialAñoActivo}-${String(historialMesActivo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -574,25 +571,22 @@
                 esEspecial = reg.incidencia === true;
             }
 
-            // Aplicación estricta de las reglas de negocio Atalaya/Portal
+            // CORRECCIÓN: Alineación del visor de tarjetas con las reglas fijas de Atalaya
             if (historialAñoActivo === 2026 && historialMesActivo === 5) { // Junio 2026
                 if (d < 18) {
-                    // Histórico consolidado fijo hasta el día 17
                     minsTeoricosDia = (esFinde || esEspecial) ? 0 : 7 * 60;
                 } else {
-                    // Del 18 en adelante dinámico
-                    if ((minsFichadosDia > 0 || esEspecial) && !esFinde) {
+                    // Del 18 en adelante: si ya ha transcurrido el día o si tiene datos guardados
+                    if (!esFinde && (d <= diaHoyJunio || minsFichadosDia > 0 || esEspecial)) {
                         minsTeoricosDia = esEspecial ? 0 : 7 * 60;
                     }
                 }
             } else {
-                // Para meses genéricos futuros o pasados fuera de Junio 2026
-                if ((minsFichadosDia > 0 || esEspecial) && !esFinde) {
+                if (!esFinde && (minsFichadosDia > 0 || esEspecial)) {
                     minsTeoricosDia = esEspecial ? 0 : 7 * 60;
                 }
             }
 
-            // Filtro: Solo pintamos la fila si el día tiene fichajes, es un día especial marcado, o es el día actual seleccionado en el picker
             const esDiaDelPicker = (fechaKey === document.getElementById('fechaActual').value);
             if (minsFichadosDia === 0 && !esEspecial && !esDiaDelPicker) continue;
 
@@ -607,7 +601,7 @@
             let cadenaTeorica = `${Math.floor(minsTeoricosDia/60)}h`;
 
             const tr = document.createElement('tr');
-            if (esDiaDelPicker) tr.style.backgroundColor = '#1c1c1e'; // Sutil resalte de línea seleccionada
+            if (esDiaDelPicker) tr.style.backgroundColor = '#1c1c1e'; 
             tr.innerHTML = `
                 <td class="diario-day-label ${esDiaDelPicker ? 'current-day-highlight' : ''}">${etiquetaDia} ${esDiaDelPicker ? '📌' : ''}</td>
                 <td style="text-align: right;">${cadenaFichada}</td>
