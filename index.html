@@ -355,7 +355,7 @@
         }
 
         const hSem = Math.floor(minutosTotalesSemana / 60);
-        const mSem = minutesTotalesSemana % 60;
+        const mSem = minutosTotalesSemana % 60;
         document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
 
         const faltanMinutos = (objSemanal * 60) - minutosTotalesSemana;
