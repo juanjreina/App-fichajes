@@ -83,19 +83,16 @@
         .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
         .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
 
-        /* CSS ORIGINAL RESTAURADO Y BLINDADO PARA EL TERMÓMETRO */
         .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); box-sizing: border-box; }
         .thermometer-day:last-child { border-bottom: none; }
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
         .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
 
-        /* Estructura Limpia de Tabla Mensual (Estática) */
         .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
         .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
         .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
         .col-right { text-align: right; }
 
-        /* Estilos Bloque de Detalle Historial Diario */
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
         .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
@@ -234,11 +231,20 @@
     let historialAñoActivo = 2026;
     let historialMesActivo = 5; 
 
+    // Helper único centralizado para obtener las horas semanales según el año y mes
     function obtenerObjetivoSemanal(fechaStr) {
         const [yyyy, mm] = fechaStr.split('-').map(Number);
         if (yyyy < 2026) return 28;
-        if (yyyy === 2026 && mm < 6) return 28;
-        return 35;
+        if (yyyy === 2026 && mm < 6) return 28; // De Enero (1) a Mayo (5) -> 28h
+        return 35; // Junio (6) en adelante -> 35h
+    }
+
+    // Helper único centralizado para obtener los minutos teóricos que corresponden a UN día laborable aislado
+    function obtenerMinutosTeoricosDia(fechaStr) {
+        const horasSemanales = obtenerObjetivoSemanal(fechaStr);
+        // 28h semanales / 5 días = 5.6h diarias (336 minutos)
+        // 35h semanales / 5 días = 7h diarias (420 minutos)
+        return (horasSemanales / 5) * 60;
     }
 
     function formatearFechaLocalISO(date) {
@@ -272,7 +278,7 @@
 
         if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, tramos: [] };
         if (Array.isArray(baseDatos[fecha])) {
-            baseDatos[fecha] = { incidencia: false, tramos: baseDatos[fecha] };
+            baseDatos[fecha] = { incidencia: false, tramos: varArray };
         }
 
         if (baseDatos[fecha].incidencia) {
@@ -453,6 +459,7 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
+        // Los meses pasados estáticos ya tienen su saldo inalterable calculado
         let mesesEstaticos = [
             { id: 0, nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
             { id: 1, nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
@@ -467,21 +474,19 @@
             inyectarFilaTablaResumen(m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        let minsTeoricosJunio = 84 * 60; 
+        // Cálculo dinámico para Junio del año activo (2026) en base a su recorrido completo
+        let minsTeoricosJunio = 0; 
         let minsFichadosJunio = 0;
-
-        for (let d = 1; d <= 30; d++) {
-            let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
-            minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
-        }
 
         const fechaHoy = new Date();
         const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
 
-        for (let d = 18; d <= 30; d++) {
+        for (let d = 1; d <= 30; d++) {
             let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
             let reg = baseDatos[fechaKey];
             
+            minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
+
             let dObj = new Date(2026, 5, d); 
             let diaSemana = dObj.getDay();
             let esFinde = (diaSemana === 0 || diaSemana === 6);
@@ -491,7 +496,7 @@
                 if (d <= diaHoyJunio || tieneFichajeFuturo) {
                     let esEspecial = reg && reg.incidencia === true;
                     if (!esEspecial) {
-                        minsTeoricosJunio += 7 * 60;
+                        minsTeoricosJunio += obtenerMinutosTeoricosDia(fechaKey); // Utiliza el helper dinámico (420 minutos / 7h)
                     }
                 }
             }
@@ -555,7 +560,8 @@
         let tieneRegistros = false;
 
         const fechaHoy = new Date();
-        const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
+        const esMesActualReal = (fechaHoy.getFullYear() === historialAñoActivo && fechaHoy.getMonth() === historialMesActivo);
+        const diaLimite = esMesActualReal ? fechaHoy.getDate() : totalDiasMes;
 
         for (let d = 1; d <= totalDiasMes; d++) {
             let fechaKey = `${historialAñoActivo}-${String(historialMesActivo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -576,18 +582,9 @@
                 esEspecial = reg.incidencia === true;
             }
 
-            if (historialAñoActivo === 2026 && historialMesActivo === 5) { 
-                if (d < 18) {
-                    minsTeoricosDia = (esFinde || esEspecial) ? 0 : 7 * 60;
-                } else {
-                    if (!esFinde && (d <= diaHoyJunio || minsFichadosDia > 0 || esEspecial)) {
-                        minsTeoricosDia = esEspecial ? 0 : 7 * 60;
-                    }
-                }
-            } else {
-                if (!esFinde && (minsFichadosDia > 0 || esEspecial)) {
-                    minsTeoricosDia = esEspecial ? 0 : 7 * 60;
-                }
+            // Aplicación de la regla dinámica para el teórico diario (5.6h antes de Junio, 7h desde Junio en adelante)
+            if (!esFinde && (d <= diaLimite || minsFichadosDia > 0 || esEspecial)) {
+                minsTeoricosDia = esEspecial ? 0 : obtenerMinutosTeoricosDia(fechaKey);
             }
 
             const esDiaDelPicker = (fechaKey === document.getElementById('fechaActual').value);
@@ -601,7 +598,11 @@
             if (saldoDia < 0) colorSaldo = 'var(--danger-color)';
 
             let cadenaFichada = esEspecial ? '<span class="badge-incidencia">ESPECIAL</span>' : `${Math.floor(minsFichadosDia/60)}h ${String(minsFichadosDia%60).padStart(2,'0')}m`;
-            let cadenaTeorica = `${Math.floor(minsTeoricosDia/60)}h`;
+            
+            // Formateo del teórico dinámico (para evitar decimales feos en la vista si son 5h 36m)
+            let hTeorica = Math.floor(minsTeoricosDia / 60);
+            let mTeorica = minsTeoricosDia % 60;
+            let cadenaTeorica = mTeorica > 0 ? `${hTeorica}h ${mTeorica}m` : `${hTeorica}h`;
 
             const tr = document.createElement('tr');
             if (esDiaDelPicker) tr.style.backgroundColor = '#1c1c1e'; 
