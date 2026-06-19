@@ -3,218 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Control de Jornada</title>
+    <title>Control de Jornada Pro</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
-    <!-- Icono para la pantalla de inicio del iPhone -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
     
     <style>
         :root {
-            --bg-color: #000000; /* Negro puro estilo iOS */
-            --card-bg: #1c1c1e;  /* Gris de tarjetas nativas de Apple */
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
             --text-color: #f2f2f7;
-            --accent-color: #0a84ff; /* Azul Apple */
-            --success-color: #30d158; /* Verde Apple */
-            --danger-color: #ff453a; /* Rojo Apple */
+            --accent-color: #0a84ff;
+            --success-color: #30d158;
+            --danger-color: #ff453a;
+            --warning-color: #ff9f0a;
             --border-color: #38383a;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            -webkit-tap-highlight-color: transparent; user-select: none;
         }
 
-        /* Barra superior estilo App Nativa */
         .app-header {
-            width: 100%;
-            padding-top: calc(15px + env(safe-area-inset-top)); /* Evita el notch/isla dinámica */
-            padding-bottom: 12px;
-            text-align: center;
-            font-size: 1.1rem;
-            font-weight: 600;
-            background-color: #121212;
-            border-bottom: 0.5px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            width: 100%; padding-top: calc(15px + env(safe-area-inset-top)); padding-bottom: 12px;
+            text-align: center; font-size: 1.1rem; font-weight: 600;
+            background-color: #121212; border-bottom: 0.5px solid var(--border-color);
+            position: sticky; top: 0; z-index: 10;
         }
 
-        .container {
-            width: 100%;
-            max-width: 450px;
-            box-sizing: border-box;
-            padding: 16px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .date-picker-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-
+        .container { width: 100%; max-width: 450px; box-sizing: border-box; padding: 16px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .date-picker-container { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        
         input[type="date"] {
-            background: #2c2c2e;
-            border: none;
-            color: #fff;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 1rem;
-            flex: 1;
-            text-align: center;
-            font-family: inherit;
+            background: #2c2c2e; border: none; color: #fff; padding: 12px;
+            border-radius: 10px; font-size: 1rem; flex: 1; text-align: center; font-family: inherit;
         }
 
-        .progress-container {
-            margin: 12px 0 4px 0;
-            background: #2c2c2e;
-            border-radius: 10px;
-            overflow: hidden;
-            height: 24px;
-            position: relative;
-        }
+        .progress-container { margin: 12px 0 4px 0; background: #2c2c2e; border-radius: 10px; overflow: hidden; height: 24px; position: relative; }
+        .progress-bar { background: linear-gradient(90deg, var(--accent-color), var(--success-color)); height: 100%; width: 0%; transition: width 0.3s; }
+        .progress-text { position: absolute; width: 100%; text-align: center; font-size: 0.85rem; font-weight: 600; line-height: 24px; color: #fff; }
 
-        .progress-bar {
-            background: linear-gradient(90deg, var(--accent-color), var(--success-color));
-            height: 100%;
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        .progress-text {
-            position: absolute;
-            width: 100%;
-            text-align: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            line-height: 24px;
-            color: #fff;
-        }
-
-        .tramo-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 0.5px solid var(--border-color);
-        }
+        .tramo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border-color); }
         .tramo-row:last-child { border-bottom: none; margin-bottom: 0; }
 
         input[type="time"] {
-            background: #2c2c2e;
-            border: none;
-            color: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 1rem;
-            width: 90px;
-            text-align: center;
-            font-family: inherit;
+            background: #2c2c2e; border: none; color: #fff; padding: 10px;
+            border-radius: 8px; font-size: 1rem; width: 90px; text-align: center; font-family: inherit;
         }
 
         .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px; }
-
-        .btn-add {
-            width: 100%;
-            padding: 12px;
-            background: transparent;
-            color: var(--accent-color);
-            border: 1px dashed var(--accent-color);
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            margin-top: 4px;
-        }
-
-        .section-title {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #8e8e93;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .summary-text {
-            display: flex;
-            justify-content: space-between;
-            font-size: 1rem;
-            margin: 8px 0;
-        }
-
-        .thermometer-day {
-            display: flex;
-            flex-direction: column;
-            padding: 10px 0;
-            border-bottom: 0.5px solid var(--border-color);
-        }
-        .thermometer-day:last-child { border-bottom: none; }
         
-        .thermometer-header {
-            display: flex;
-            justify-content: space-between;
-            font-weight: 500;
-            font-size: 1rem;
+        .btn-add {
+            width: 100%; padding: 12px; background: transparent; color: var(--accent-color);
+            border: 1px dashed var(--accent-color); border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; margin-top: 4px;
         }
-        .thermometer-tramos {
-            font-size: 0.85rem;
-            color: #8e8e93;
-            margin-top: 4px;
+
+        .btn-incidencia {
+            width: 100%; padding: 10px; background: #2c2c2e; color: var(--warning-color);
+            border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 8px;
         }
+
+        .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
+        .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
+
+        .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); }
+        .thermometer-day:last-child { border-bottom: none; }
+        .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; }
+        .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; }
+
+        /* Estilos Tabla Mensual */
+        .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
+        .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
+        .tabla-meses td { padding: 10px 0; border-bottom: 0.5px solid #2c2c2e; }
+        .tabla-meses tr:last-child td { border-bottom: none; }
 
         .backup-zone { display: flex; gap: 12px; margin-top: 20px; }
-        .btn-backup {
-            flex: 1; padding: 10px; background: var(--card-bg); color: #8e8e93;
-            border: 0.5px solid var(--border-color); border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: 500;
-        }
+        .btn-backup { flex: 1; padding: 10px; background: var(--card-bg); color: #8e8e93; border: 0.5px solid var(--border-color); border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+        .panel-backup { display: none; background: #1c1c1e; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-top: 15px; }
+        .panel-backup textarea { width: 100%; height: 90px; background: #000; color: var(--success-color); border: 0.5px solid var(--border-color); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 11px; box-sizing: border-box; resize: none; margin-top: 8px; }
+        .current-day-highlight { color: var(--accent-color); font-weight: 600; }
         
-        .current-day-highlight {
-            color: var(--accent-color);
-            font-weight: 600;
-        }
-
-        /* Panel de seguridad integrado (Evita errores de copia) */
-        .panel-backup {
-            display: none;
-            background: #1c1c1e;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 15px;
-        }
-        .panel-backup textarea {
-            width: 100%; height: 90px; background: #000; color: var(--success-color);
-            border: 0.5px solid var(--border-color); border-radius: 8px; padding: 8px;
-            font-family: monospace; font-size: 11px; box-sizing: border-box; resize: none; margin-top: 8px;
+        .badge-incidencia {
+            background-color: #483d11; color: var(--warning-color);
+            padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;
         }
     </style>
 </head>
 <body>
 
-<!-- Encabezado estilo iOS Nativo -->
 <div class="app-header">Control de Jornada</div>
 
 <div class="container">
-    <!-- 1. GESTIÓN DEL DÍA SELECCIONADO -->
+    <!-- 1. GESTIÓN DIARIA -->
     <div class="card">
         <div class="section-title">Seleccionar Fecha</div>
         <div class="date-picker-container">
@@ -224,16 +111,19 @@
 
     <div class="card">
         <div class="summary-text" style="margin-bottom: 12px;">
-            <span class="section-title" style="margin:0;">Fichajes del día elegido</span>
+            <span class="section-title" style="margin:0;">Fichajes del día</span>
             <span id="totalDia" style="color: var(--success-color); font-weight: 600;">Total: 0h 00m</span>
         </div>
         <div id="tramosContenedor"></div>
-        <button class="btn-add" onclick="agregarTramoVacio()">Añadir Tramo</button>
+        <div id="zonaBotonesDiarios">
+            <button class="btn-add" onclick="agregarTramoVacio()">➕ Añadir Tramo</button>
+            <button class="btn-incidencia" onclick="alternarIncidencia()">📅 Marcar Vacaciones / Asuntos Propios</button>
+        </div>
     </div>
 
-    <!-- 2. TERMÓMETRO SEMANAL DETALLADO -->
+    <!-- 2. TERMÓMETRO SEMANAL -->
     <div class="card">
-        <div class="section-title" id="tituloSemana">Termómetro Semanal (35h)</div>
+        <div class="section-title" id="tituloSemana">Termómetro Semanal</div>
         
         <div class="summary-text">
             <span>Total Acumulado:</span>
@@ -241,7 +131,7 @@
         </div>
         <div class="summary-text">
             <span>Estado / Restante:</span>
-            <strong id="estadoSemana" style="color: var(--accent-color);">35h 00m restantes</strong>
+            <strong id="estadoSemana" style="color: var(--accent-color);">0h restantes</strong>
         </div>
         
         <div class="progress-container">
@@ -252,7 +142,25 @@
         <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 0.5px solid var(--border-color); padding-top: 5px;"></div>
     </div>
 
-    <!-- Zona de Seguridad Avanzada -->
+    <!-- 3. PANEL MENSUAL TIPO ATALAYA -->
+    <div class="card">
+        <div class="section-title">Resumen Mensual Acumulado</div>
+        <table class="tabla-meses">
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th>Fichado</th>
+                    <th>Teórico</th>
+                    <th>Saldo</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoTablaMeses">
+                <!-- Dinámico con JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Zona de Seguridad -->
     <div class="backup-zone">
         <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
         <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
@@ -266,84 +174,114 @@
 </div>
 
 <script>
-    const OBJETIVO_SEMANAL = 35;
     const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    let datosV2 = localStorage.getItem('registro_calendario_v2');
-    let datosV3 = localStorage.getItem('registro_calendario_v3');
-    if (datosV2 && !datosV3) {
-        localStorage.setItem('registro_calendario_v3', datosV2);
-    }
+    // Migración automática de datos existentes
+    let dV2 = localStorage.getItem('registro_calendario_v2');
+    let dV3 = localStorage.getItem('registro_calendario_v3');
+    if (dV2 && !dV3) localStorage.setItem('registro_calendario_v3', dV2);
 
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
     let modoBackup = '';
 
+    // Obtener las horas semanales según el mes (Antes de Junio 2026 = 28h, después = 35h)
+    function obtenerObjetivoSemanal(fechaStr) {
+        const [yyyy, mm] = fechaStr.split('-').map(Number);
+        if (yyyy < 2026) return 28;
+        if (yyyy === 2026 && mm < 6) return 28;
+        return 35;
+    }
+
     function formatearFechaLocalISO(date) {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     }
 
     function establecerFechaDeHoy() {
-        const hoy = new Date();
-        document.getElementById('fechaActual').value = formatearFechaLocalISO(hoy);
+        document.getElementById('fechaActual').value = formatearFechaLocalISO(new Date());
     }
 
     function inicializar() {
-        if (!document.getElementById('fechaActual').value) {
-            establecerFechaDeHoy();
-        }
+        if (!document.getElementById('fechaActual').value) establecerFechaDeHoy();
         cargarDiaActual();
     }
 
-    function cambiarFecha() {
-        cargarDiaActual();
-    }
+    function cambiarFecha() { cargarDiaActual(); }
 
     function cargarDiaActual() {
         const fecha = document.getElementById('fechaActual').value;
         const contenedor = document.getElementById('tramosContenedor');
+        const btnInc = document.querySelector('.btn-incidencia');
         contenedor.innerHTML = '';
 
-        const tramos = baseDatos[fecha] || [];
+        const registroDia = baseDatos[fecha] || { incidencia: false, tramos: [] };
+        
+        // Si viene del formato antiguo (que era un array directo), lo estructuramos
+        if (Array.isArray(baseDatos[fecha])) {
+            baseDatos[fecha] = { incidencia: false, tramos: baseDatos[fecha] };
+        }
 
-        if (tramos.length === 0) {
-            contenedor.innerHTML = '<div style="text-align:center; color:#666; font-size:0.9rem; padding: 5px 0; margin-bottom:10px;">No hay fichajes manuales este día.</div>';
+        if (baseDatos[fecha] && baseDatos[fecha].incidencia) {
+            contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUATADO (Vacaciones / Asuntos Propios)</div>';
+            btnInc.innerText = '❌ Quitar Día Especial';
+            btnInc.style.background = '#4c1d1d';
+            btnInc.style.color = 'var(--danger-color)';
+            document.querySelector('.btn-add').style.display = 'none';
         } else {
-            tramos.forEach((tramo, index) => {
-                const div = document.createElement('div');
-                div.className = 'tramo-row';
-                div.innerHTML = `
-                    <input type="time" value="${tramo.entrada || ''}" onchange="actualizarTramo(${index}, 'entrada', this.value)">
-                    <span style="color:#8e8e93;">a</span>
-                    <input type="time" value="${tramo.salida || ''}" onchange="actualizarTramo(${index}, 'salida', this.value)">
-                    <button class="btn-icon" onclick="eliminarTramo(${index})">🗑️</button>
-                `;
-                contenedor.appendChild(div);
-            });
+            btnInc.innerText = '📅 Marcar Vacaciones / Asuntos Propios';
+            btnInc.style.background = '#2c2c2e';
+            btnInc.style.color = 'var(--warning-color)';
+            document.querySelector('.btn-add').style.display = 'block';
+
+            const tramos = (baseDatos[fecha] && baseDatos[fecha].tramos) ? baseDatos[fecha].tramos : [];
+
+            if (tramos.length === 0) {
+                contenedor.innerHTML = '<div style="text-align:center; color:#666; font-size:0.9rem; padding: 5px 0; margin-bottom:10px;">No hay fichajes manuales este día.</div>';
+            } else {
+                tramos.forEach((tramo, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'tramo-row';
+                    div.innerHTML = `
+                        <input type="time" value="${tramo.entrada || ''}" onchange="actualizarTramo(${index}, 'entrada', this.value)">
+                        <span style="color:#8e8e93;">a</span>
+                        <input type="time" value="${tramo.salida || ''}" onchange="actualizarTramo(${index}, 'salida', this.value)">
+                        <button class="btn-icon" onclick="eliminarTramo(${index})">🗑️</button>
+                    `;
+                    contenedor.appendChild(div);
+                });
+            }
         }
 
         calcularMetricasYTermometro(fecha);
+        dibujarTablaMensual();
+    }
+
+    function alternarIncidencia() {
+        const fecha = document.getElementById('fechaActual').value;
+        if (!baseDatos[fecha] || Array.isArray(baseDatos[fecha])) {
+            baseDatos[fecha] = { incidencia: false, tramos: [] };
+        }
+        baseDatos[fecha].incidencia = !baseDatos[fecha].incidencia;
+        if (baseDatos[fecha].incidencia) baseDatos[fecha].tramos = []; // Limpia si marcas incidencia
+        guardarYActualizar();
     }
 
     function agregarTramoVacio() {
         const fecha = document.getElementById('fechaActual').value;
-        if (!baseDatos[fecha]) baseDatos[fecha] = [];
-        baseDatos[fecha].push({ entrada: '', salida: '' });
+        if (!baseDatos[fecha] || Array.isArray(baseDatos[fecha])) baseDatos[fecha] = { incidencia: false, tramos: [] };
+        baseDatos[fecha].tramos.push({ entrada: '', salida: '' });
         guardarYActualizar();
     }
 
     function actualizarTramo(index, tipo, valor) {
         const fecha = document.getElementById('fechaActual').value;
-        baseDatos[fecha][index][tipo] = valor;
+        baseDatos[fecha].tramos[index][tipo] = valor;
         guardarYActualizar();
     }
 
     function eliminarTramo(index) {
         const fecha = document.getElementById('fechaActual').value;
-        baseDatos[fecha].splice(index, 1);
-        if (baseDatos[fecha].length === 0) delete baseDatos[fecha];
+        baseDatos[fecha].tramos.splice(index, 1);
         guardarYActualizar();
     }
 
@@ -352,7 +290,7 @@
         cargarDiaActual();
     }
 
-    function obtenerLunesYDomingo(fechaStr) {
+    function obtenerLunesSemana(fechaStr) {
         const [yyyy, mm, dd] = fechaStr.split('-').map(Number);
         const fecha = new Date(yyyy, mm - 1, dd);
         const diaSemana = fecha.getDay();
@@ -370,18 +308,37 @@
         return minOut - minIn;
     }
 
-    function calcularMetricasYTermometro(fechaSeleccionada) {
-        let minutosDiaSeleccionado = 0;
-        if (baseDatos[fechaSeleccionada]) {
-            baseDatos[fechaSeleccionada].forEach(t => {
-                minutosDiaSeleccionado += obtenerMinutosEntreHoras(t.entrada, t.salida);
-            });
+    function calcularMinutosDeUnDia(fechaStr) {
+        let mins = 0;
+        const registro = baseDatos[fechaStr];
+        if (!registro) return 0;
+        
+        // Soporte formato viejo
+        if (Array.isArray(registro)) {
+            registro.forEach(t => mins += obtenerMinutosEntreHoras(t.entrada, t.salida));
+            return mins;
         }
-        const hDia = Math.floor(minutosDiaSeleccionado / 60);
-        const mDia = minutosDiaSeleccionado % 60;
-        document.getElementById('totalDia').innerText = `Total: ${hDia}h ${mDia.toString().padStart(2, '0')}m`;
 
-        const lunes = obtenerLunesYDomingo(fechaSeleccionada);
+        if (registro.incidencia) {
+            // Si es incidencia, le sumamos la jornada teórica diaria (objetivo semanal / 5 días laborales habituales)
+            const objSem = obtenerObjetivoSemanal(fechaStr);
+            return (objSem / 5) * 60;
+        }
+
+        if (registro.tramos) {
+            registro.tramos.forEach(t => mins += obtenerMinutosEntreHoras(t.entrada, t.salida));
+        }
+        return mins;
+    }
+
+    function calcularMetricasYTermometro(fechaSeleccionada) {
+        const objSemanal = obtenerObjetivoSemanal(fechaSeleccionada);
+        document.getElementById('tituloSemana').innerText = `Termómetro Semanal (Objetivo ${objSemanal}h)`;
+
+        const minsDia = calcularMinutosDeUnDia(fechaSeleccionada);
+        document.getElementById('totalDia').innerText = `Total: ${Math.floor(minsDia/60)}h ${String(minsDia%60).padStart(2,'0')}m`;
+
+        const lunes = obtenerLunesSemana(fechaSeleccionada);
         const desgloseContenedor = document.getElementById('desgloseSemanalContenedor');
         desgloseContenedor.innerHTML = '';
 
@@ -393,69 +350,141 @@
             const nombreDia = nombresDias[diaBucle.getDay()];
             const esElDiaSeleccionado = (ISOStr === fechaSeleccionada);
             
-            let minutosEsteDia = 0;
-            let textoTramos = [];
+            const minsEsteDia = calcularMinutosDeUnDia(ISOStr);
+            minutosTotalesSemana += minsEsteDia;
 
-            if (baseDatos[ISOStr]) {
-                baseDatos[ISOStr].forEach(t => {
-                    const mins = obtenerMinutosEntreHoras(t.entrada, t.salida);
-                    minutosEsteDia += mins;
-                    if (t.entrada && t.salida) {
-                        textoTramos.push(`${t.entrada} a ${t.salida}`);
+            let tramosStr = 'Sin registros';
+            const reg = baseDatos[ISOStr];
+            if (reg) {
+                if (reg.incidencia || (Array.isArray(reg) && reg.incidencia)) {
+                    tramosStr = '<span class="badge-incidencia">DÍA ESPECIAL</span>';
+                } else {
+                    let arr = Array.isArray(reg) ? reg : reg.tramos;
+                    if (arr && arr.length > 0) {
+                        let tTxt = [];
+                        arr.forEach(t => { if(t.entrada && t.salida) tTxt.push(`${t.entrada} a ${t.salida}`)});
+                        if (tTxt.length > 0) tramosStr = tTxt.join(' | ');
                     }
-                });
+                }
             }
-            minutosTotalesSemana += minutosEsteDia;
 
-            const hE = Math.floor(minutosEsteDia / 60);
-            const mE = minutosEsteDia % 60;
-            const tDiaStr = minutosEsteDia > 0 ? `${hE}h ${mE.toString().padStart(2, '0')}m` : '0h';
-            const tramosStr = textoTramos.length > 0 ? textoTramos.join(' | ') : 'Sin registros';
+            const hE = Math.floor(minsEsteDia / 60);
+            const mE = minsEsteDia % 60;
+            const tDiaStr = minsEsteDia > 0 ? `${hE}h ${String(mE).padStart(2,'0')}m` : '0h';
 
             const divDia = document.createElement('div');
             divDia.className = 'thermometer-day';
             divDia.innerHTML = `
                 <div class="thermometer-header ${esElDiaSeleccionado ? 'current-day-highlight' : ''}">
                     <span>${nombreDia} (${diaBucle.getDate()}/${diaBucle.getMonth()+1}) ${esElDiaSeleccionado ? '📌' : ''}</span>
-                    <span style="color: ${minutosEsteDia > 0 ? 'var(--success-color)' : '#666'}">${tDiaStr}</span>
+                    <span style="color: ${minsEsteDia > 0 ? 'var(--success-color)' : '#666'}">${tDiaStr}</span>
                 </div>
                 <div class="thermometer-tramos">${tramosStr}</div>
             `;
             desgloseContenedor.appendChild(divDia);
-
             diaBucle.setDate(diaBucle.getDate() + 1);
         }
 
         const hSem = Math.floor(minutosTotalesSemana / 60);
         const mSem = minutosTotalesSemana % 60;
-        document.getElementById('totalSemana').innerText = `${hSem}h ${mSem.toString().padStart(2, '0')}m`;
+        document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
 
-        const faltanMinutos = (OBJETIVO_SEMANAL * 60) - minutosTotalesSemana;
+        const faltanMinutos = (objSemanal * 60) - minutosTotalesSemana;
         const estadoLabel = document.getElementById('estadoSemana');
 
         if (faltanMinutos > 0) {
-            const hFaltan = Math.floor(faltanMinutos / 60);
-            const mFaltan = faltanMinutos % 60;
-            estadoLabel.innerText = `Faltan ${hFaltan}h ${mFaltan.toString().padStart(2, '0')}m`;
+            estadoLabel.innerText = `Faltan ${Math.floor(faltanMinutos/60)}h ${String(faltanMinutos%60).padStart(2,'0')}m`;
             estadoLabel.style.color = 'var(--accent-color)';
         } else if (faltanMinutos === 0) {
-            estadoLabel.innerText = '¡Objetivo 35h cumplido! 🎉';
+            estadoLabel.innerText = '¡Objetivo cumplido! 🎉';
             estadoLabel.style.color = 'var(--success-color)';
         } else {
-            const extraMinutos = Math.abs(faltanMinutos);
-            const hExtra = Math.floor(extraMinutos / 60);
-            const mExtra = extraMinutos % 60;
-            estadoLabel.innerText = `Horas Extra: +${hExtra}h ${mExtra.toString().padStart(2, '0')}m`;
+            const extra = Math.abs(faltanMinutos);
+            estadoLabel.innerText = `Horas Extra: +${Math.floor(extra/60)}h ${String(extra%60).padStart(2,'0')}m`;
             estadoLabel.style.color = 'var(--success-color)';
         }
 
-        let porcentaje = ((minutosTotalesSemana / 60) / OBJETIVO_SEMANAL) * 100;
+        let porcentaje = ((minutosTotalesSemana / 60) / objSemanal) * 100;
         if (porcentaje > 100) porcentaje = 100;
         document.getElementById('progressBar').style.width = `${porcentaje}%`;
         document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
     }
 
-    // NUEVAS FUNCIONES DE COPIA INTEGRADAS EN PANTALLA
+    // CALCULO Y DIBUJO DE LA TABLA ESTILO ATALAYA
+    function dibujarTablaMensual() {
+        const cuerpo = document.getElementById('cuerpoTablaMeses');
+        cuerpo.innerHTML = '';
+
+        // Estructura para acumular minutos por mes del año 2026
+        let resumenMeses = {};
+        for(let m=0; m<12; m++) {
+            resumenMeses[m] = { fichado: 0, teorico: 0 };
+        }
+
+        // 1. Calcular el teórico basado en los días laborables (Lunes a Viernes) de cada mes
+        // Multiplicando por su correspondiente jornada diaria (28h/5 = 5.6h ó 35h/5 = 7h)
+        for (let m = 0; m < 12; m++) {
+            let diasEnMes = new Date(2026, m + 1, 0).getDate();
+            for (let d = 1; d <= diasEnMes; d++) {
+                let dObjeto = new Date(2026, m, d);
+                let ISO = formatearFechaLocalISO(dObjeto);
+                let dayOfWeek = dObjeto.getDay();
+                
+                // Si es día de diario (Lunes a Viernes) genera obligación teórica
+                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                    let objSem = obtenerObjetivoSemanal(ISO);
+                    resumenMeses[m].teorico += (objSem / 5) * 60;
+                }
+            }
+        }
+
+        // 2. Sumar los minutos reales fichados en la base de datos
+        for (let fechaKey in baseDatos) {
+            if (fechaKey.startsWith('2026-')) {
+                const [,, mm] = fechaKey.split('-').map(Number);
+                const mesIndex = mm - 1;
+                if (resumenMeses[mesIndex]) {
+                    resumenMeses[mesIndex].fichado += calcularMinutosDeUnDia(fechaKey);
+                }
+            }
+        }
+
+        // 3. Renderizar las filas de la tabla
+        for (let m = 0; m < 12; m++) {
+            // Solo mostramos los meses que ya han tenido algún registro o transcurridos para no saturar
+            if (resumenMeses[m].fichado === 0 && m > (new Date().getMonth())) continue;
+
+            const f = resumenMeses[m].fichado;
+            const t = resumenMeses[m].teorico;
+            const dif = f - t;
+
+            const fStr = `${Math.floor(f/60)}:${String(f%60).padStart(2,'0')}`;
+            const tStr = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+            
+            let difStr = '';
+            let colorDif = 'var(--text-color)';
+            if (dif > 0) {
+                difStr = `+${Math.floor(dif/60)}:${String(dif%60).padStart(2,'0')}`;
+                colorDif = 'var(--success-color)';
+            } else if (dif < 0) {
+                const abs = Math.abs(dif);
+                difStr = `-${Math.floor(abs/60)}:${String(abs%60).padStart(2,'0')}`;
+                colorDif = 'var(--danger-color)';
+            } else {
+                difStr = '0:00';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:500;">${mesesNombres[m]}</td>
+                <td>${fStr}</td>
+                <td style="color:#8e8e93;">${tStr}</td>
+                <td style="color:${colorDif}; font-weight:600;">${difStr}</td>
+            `;
+            cuerpo.appendChild(tr);
+        }
+    }
+
     function mostrarExportar() {
         modoBackup = 'exportar';
         document.getElementById('panelBackup').style.display = 'block';
