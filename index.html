@@ -83,11 +83,19 @@
         .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
         .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
 
+        /* CSS ORIGINAL RESTAURADO Y BLINDADO PARA EL TERMÓMETRO */
+        .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); box-sizing: border-box; }
+        .thermometer-day:last-child { border-bottom: none; }
+        .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
+        .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
+
+        /* Estructura Limpia de Tabla Mensual (Estática) */
         .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
         .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
         .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
         .col-right { text-align: right; }
 
+        /* Estilos Bloque de Detalle Historial Diario */
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
         .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
@@ -462,13 +470,11 @@
         let minsTeoricosJunio = 84 * 60; 
         let minsFichadosJunio = 0;
 
-        // 1. Sumamos los minutos fichados de todo Junio completo
         for (let d = 1; d <= 30; d++) {
             let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
             minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
         }
 
-        // 2. CORRECCIÓN SOBERANA: Calculamos el teórico fijo del 18 en adelante sin depender de si has fichado o no
         const fechaHoy = new Date();
         const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
 
@@ -481,12 +487,11 @@
             let esFinde = (diaSemana === 0 || diaSemana === 6);
 
             if (!esFinde) {
-                // Si el día ya ha llegado (pasado o es hoy), o tiene registros futuros, computa en el teórico
                 let tieneFichajeFuturo = reg && (calcularMinutosDeUnDia(fechaKey) > 0 || reg.incidencia === true);
                 if (d <= diaHoyJunio || tieneFichajeFuturo) {
                     let esEspecial = reg && reg.incidencia === true;
                     if (!esEspecial) {
-                        minsTeoricosJunio += 7 * 60; // Suma obligatoria fija sin trampas
+                        minsTeoricosJunio += 7 * 60;
                     }
                 }
             }
@@ -571,12 +576,10 @@
                 esEspecial = reg.incidencia === true;
             }
 
-            // CORRECCIÓN: Alineación del visor de tarjetas con las reglas fijas de Atalaya
-            if (historialAñoActivo === 2026 && historialMesActivo === 5) { // Junio 2026
+            if (historialAñoActivo === 2026 && historialMesActivo === 5) { 
                 if (d < 18) {
                     minsTeoricosDia = (esFinde || esEspecial) ? 0 : 7 * 60;
                 } else {
-                    // Del 18 en adelante: si ya ha transcurrido el día o si tiene datos guardados
                     if (!esFinde && (d <= diaHoyJunio || minsFichadosDia > 0 || esEspecial)) {
                         minsTeoricosDia = esEspecial ? 0 : 7 * 60;
                     }
