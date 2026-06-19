@@ -78,7 +78,6 @@
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; }
         .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; }
 
-        /* Estilos Tabla Mensual */
         .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
         .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
         .tabla-meses td { padding: 10px 0; border-bottom: 0.5px solid #2c2c2e; }
@@ -101,7 +100,6 @@
 <div class="app-header">Control de Jornada</div>
 
 <div class="container">
-    <!-- 1. GESTIÓN DIARIA -->
     <div class="card">
         <div class="section-title">Seleccionar Fecha</div>
         <div class="date-picker-container">
@@ -121,7 +119,6 @@
         </div>
     </div>
 
-    <!-- 2. TERMÓMETRO SEMANAL -->
     <div class="card">
         <div class="section-title" id="tituloSemana">Termómetro Semanal</div>
         
@@ -142,7 +139,6 @@
         <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 0.5px solid var(--border-color); padding-top: 5px;"></div>
     </div>
 
-    <!-- 3. PANEL MENSUAL TIPO ATALAYA -->
     <div class="card">
         <div class="section-title">Resumen Mensual Acumulado</div>
         <table class="tabla-meses">
@@ -155,12 +151,10 @@
                 </tr>
             </thead>
             <tbody id="cuerpoTablaMeses">
-                <!-- Dinámico con JS -->
             </tbody>
         </table>
     </div>
 
-    <!-- Zona de Seguridad -->
     <div class="backup-zone">
         <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
         <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
@@ -177,7 +171,6 @@
     const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    // Migración automática de datos existentes
     let dV2 = localStorage.getItem('registro_calendario_v2');
     let dV3 = localStorage.getItem('registro_calendario_v3');
     if (dV2 && !dV3) localStorage.setItem('registro_calendario_v3', dV2);
@@ -185,7 +178,6 @@
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || {};
     let modoBackup = '';
 
-    // Obtener las horas semanales según el mes (Antes de Junio 2026 = 28h, después = 35h)
     function obtenerObjetivoSemanal(fechaStr) {
         const [yyyy, mm] = fechaStr.split('-').map(Number);
         if (yyyy < 2026) return 28;
@@ -216,13 +208,12 @@
 
         const registroDia = baseDatos[fecha] || { incidencia: false, tramos: [] };
         
-        // Si viene del formato antiguo (que era un array directo), lo estructuramos
         if (Array.isArray(baseDatos[fecha])) {
             baseDatos[fecha] = { incidencia: false, tramos: baseDatos[fecha] };
         }
 
         if (baseDatos[fecha] && baseDatos[fecha].incidencia) {
-            contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUATADO (Vacaciones / Asuntos Propios)</div>';
+            contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUTADO</div>';
             btnInc.innerText = '❌ Quitar Día Especial';
             btnInc.style.background = '#4c1d1d';
             btnInc.style.color = 'var(--danger-color)';
@@ -262,7 +253,7 @@
             baseDatos[fecha] = { incidencia: false, tramos: [] };
         }
         baseDatos[fecha].incidencia = !baseDatos[fecha].incidencia;
-        if (baseDatos[fecha].incidencia) baseDatos[fecha].tramos = []; // Limpia si marcas incidencia
+        if (baseDatos[fecha].incidencia) baseDatos[fecha].tramos = [];
         guardarYActualizar();
     }
 
@@ -313,14 +304,12 @@
         const registro = baseDatos[fechaStr];
         if (!registro) return 0;
         
-        // Soporte formato viejo
         if (Array.isArray(registro)) {
             registro.forEach(t => mins += obtenerMinutosEntreHoras(t.entrada, t.salida));
             return mins;
         }
 
         if (registro.incidencia) {
-            // Si es incidencia, le sumamos la jornada teórica diaria (objetivo semanal / 5 días laborales habituales)
             const objSem = obtenerObjetivoSemanal(fechaStr);
             return (objSem / 5) * 60;
         }
@@ -410,27 +399,32 @@
         document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
     }
 
-    // CALCULO Y DIBUJO DE LA TABLA ESTILO ATALAYA
     function dibujarTablaMensual() {
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
-        // Estructura para acumular minutos por mes del año 2026
         let resumenMeses = {};
         for(let m=0; m<12; m++) {
             resumenMeses[m] = { fichado: 0, teorico: 0 };
         }
 
-        // 1. Calcular el teórico basado en los días laborables (Lunes a Viernes) de cada mes
-        // Multiplicando por su correspondiente jornada diaria (28h/5 = 5.6h ó 35h/5 = 7h)
+        const hoy = new Date();
+        const hoyISO = formatearFechaLocalISO(hoy);
+        const mesActualIndex = hoy.getMonth();
+
+        // 1. Calcular el teórico basado ÚNICAMENTE en los días transcurridos hasta HOY
         for (let m = 0; m < 12; m++) {
+            if (m > mesActualIndex) continue; // Meses futuros se quedan a 0 absoluto
+
             let diasEnMes = new Date(2026, m + 1, 0).getDate();
             for (let d = 1; d <= diasEnMes; d++) {
                 let dObjeto = new Date(2026, m, d);
                 let ISO = formatearFechaLocalISO(dObjeto);
-                let dayOfWeek = dObjeto.getDay();
                 
-                // Si es día de diario (Lunes a Viernes) genera obligación teórica
+                // Si el día evaluado es posterior al día de hoy, dejamos de sumar teórico
+                if (ISO > hoyISO) continue;
+
+                let dayOfWeek = dObjeto.getDay();
                 if (dayOfWeek >= 1 && dayOfWeek <= 5) {
                     let objSem = obtenerObjetivoSemanal(ISO);
                     resumenMeses[m].teorico += (objSem / 5) * 60;
@@ -451,8 +445,7 @@
 
         // 3. Renderizar las filas de la tabla
         for (let m = 0; m < 12; m++) {
-            // Solo mostramos los meses que ya han tenido algún registro o transcurridos para no saturar
-            if (resumenMeses[m].fichado === 0 && m > (new Date().getMonth())) continue;
+            if (m > mesActualIndex) continue; // No dibuja meses futuros
 
             const f = resumenMeses[m].fichado;
             const t = resumenMeses[m].teorico;
