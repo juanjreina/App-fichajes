@@ -39,6 +39,7 @@
 
         .container { width: 100%; max-width: 450px; box-sizing: border-box; padding: 16px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .card-global { background: linear-gradient(145deg, #1c1c1e, #2c2c2e); border: 1px solid var(--accent-color); text-align: center; }
         .date-picker-container { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
         input[type="date"] {
@@ -100,6 +101,12 @@
 <div class="app-header">Control de Jornada</div>
 
 <div class="container">
+    <div class="card card-global">
+        <div class="section-title" style="color: var(--accent-color);">Bolsa de Horas Total (2026)</div>
+        <div style="font-size: 1.8rem; font-weight: 700; margin: 4px 0;" id="saldoGlobalTotal">0:00</div>
+        <div style="font-size: 0.8rem; color: #8e8e93;" id="detalleGlobal">Desde el 1 de Enero hasta hoy</div>
+    </div>
+
     <div class="card">
         <div class="section-title">Seleccionar Fecha</div>
         <div class="date-picker-container">
@@ -236,7 +243,7 @@
         }
 
         calcularMetricasYTermometro(fecha);
-        dibujarTablaMensual();
+        dibujarTablaYCalcularGlobal();
     }
 
     function alternarIncidencia() {
@@ -372,66 +379,100 @@
         document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
     }
 
-    function dibujarTablaMensual() {
+    function dibujarTablaYCalcularGlobal() {
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
-        // GRABADO A FUEGO DE LOS DATOS OFICIALES DE ENERO A MAYO
-        // Estos valores se corresponden al 100% con los informes mensuales reales de tu intranet.
-        let resumenMeses = {
-            0: { fichado: 75 * 60 + 57,  teorico: 95 * 60 + 12 },  // Enero (Saldo -19:15)
-            1: { fichado: 117 * 60 + 5,  teorico: 112 * 60 + 0 },  // Febrero (Saldo +05:05)
-            2: { fichado: 96 * 60 + 17,  teorico: 106 * 60 + 24 }, // Marzo (Saldo -10:07)
-            3: { fichado: 79 * 60 + 2,   teorico: 95 * 60 + 12 },  // Abril (Saldo -16:10)
-            4: { fichado: 99 * 60 + 8,   teorico: 100 * 60 + 48 }, // Mayo (Saldo -01:40)
-            5: { fichado: 0,             teorico: 84 * 60 + 0 }    // Junio (Teorico oficial de 84:00)
-        };
+        let mesesEstaticos = [
+            { nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
+            { nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
+            { nombre: 'Marzo',    fichado: 96*60 + 17,  teorico: 106*60 + 24, saldo: (96*60 + 17) - (106*60 + 24) },
+            { nombre: 'Abril',    fichado: 79*60 + 2,   teorico: 95*60 + 12,  saldo: (79*60 + 2) - (95*60 + 12) },
+            { nombre: 'Mayo',     fichado: 99*60 + 8,   teorico: 100*60 + 48, saldo: (99*60 + 8) - (100*60 + 48) }
+        ];
 
-        // Calcular minutos fichados en tiempo real para JUNIO (desde el LocalStorage)
+        let acumuladoSaldosPasados = 0;
+        mesesEstaticos.forEach(m => {
+            acumuladoSaldosPasados += m.saldo;
+            inyectarFilaTabla(m.nombre, m.fichado, m.teorico, m.saldo);
+        });
+
         let minsFichadosJunio = 0;
-        for (let fechaKey in baseDatos) {
-            if (fechaKey.startsWith('2026-06-')) {
-                const reg = baseDatos[fechaKey];
-                if (reg && !reg.incidencia && reg.tramos) {
-                    reg.tramos.forEach(t => {
-                        minsFichadosJunio += obtenerMinutosEntreHoras(t.entrada, t.salida);
-                    });
+        let minsTeoricosJunioHastaHoy = 0;
+
+        const hoy = new Date();
+        const hoyISO = formatearFechaLocalISO(hoy);
+        const ultimoDiaMes = new Date(2026, 6, 0).getDate(); 
+
+        for (let d = 1; d <= ultimoDiaMes; d++) {
+            let dObjeto = new Date(2026, 5, d); 
+            let ISO = formatearFechaLocalISO(dObjeto);
+
+            minsFichadosJunio += calcularMinutosDeUnDia(ISO);
+
+            // REGLA CLAVE ATALAYA: El teórico solo avanza hasta el día actual
+            if (ISO <= hoyISO) {
+                let dayOfWeek = dObjeto.getDay();
+                const reg = baseDatos[ISO] || { incidencia: false };
+
+                // Si es un día laborable de lunes a viernes (1 al 5)
+                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                    // Si NO está marcado como libre/incidencia especial, le sumamos las 7 horas exigidas
+                    if (!reg.incidencia) {
+                        minsTeoricosJunioHastaHoy += 7 * 60;
+                    }
+                    // Si ESTÁ marcado como día especial, el teórico cuenta como 0h automáticamente
                 }
             }
         }
-        resumenMeses[5].fichado = minsFichadosJunio;
 
-        // Dibujar los meses en la tabla de la interfaz
-        for (let m = 0; m <= 5; m++) {
-            const f = resumenMeses[m].fichado;
-            const t = resumenMeses[m].teorico;
-            const dif = f - t;
+        let saldoJunioDinamico = minsFichadosJunio - minsTeoricosJunioHastaHoy;
+        inyectarFilaTabla('Junio', minsFichadosJunio, minsTeoricosJunioHastaHoy, saldoJunioDinamico);
 
-            const fStr = `${Math.floor(f/60)}:${String(f%60).padStart(2,'0')}`;
-            const tStr = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-            
-            let difStr = '';
-            let colorDif = 'var(--text-color)';
-            if (dif > 0) {
-                difStr = `+${Math.floor(dif/60)}:${String(dif%60).padStart(2,'0')}`;
-                colorDif = 'var(--success-color)';
-            } else if (dif < 0) {
-                const abs = Math.abs(dif);
-                difStr = `-${Math.floor(abs/60)}:${String(abs%60).padStart(2,'0')}`;
-                colorDif = 'var(--danger-color)';
-            } else {
-                difStr = '0:00';
-            }
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="font-weight:500;">${mesesNombres[m]}</td>
-                <td>${fStr}</td>
-                <td style="color:#8e8e93;">${tStr}</td>
-                <td style="color:${colorDif}; font-weight:600;">${difStr}</td>
-            `;
-            cuerpo.appendChild(tr);
+        let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunioDinamico;
+        const panelGlobal = document.getElementById('saldoGlobalTotal');
+        
+        let prefijo = '';
+        if (saldoGlobalMinutos > 0) {
+            prefijo = '+';
+            panelGlobal.style.color = 'var(--success-color)';
+        } else if (saldoGlobalMinutos < 0) {
+            prefijo = '-';
+            panelGlobal.style.color = 'var(--danger-color)';
+        } else {
+            panelGlobal.style.color = 'var(--text-color)';
         }
+
+        let absMinutos = Math.abs(saldoGlobalMinutos);
+        panelGlobal.innerText = `${prefijo}${Math.floor(absMinutos/60)}h ${String(absMinutos%60).padStart(2,'0')}m`;
+    }
+
+    function inyectarFilaTabla(nombre, f, t, dif) {
+        const cuerpo = document.getElementById('cuerpoTablaMeses');
+        const fStr = `${Math.floor(f/60)}:${String(f%60).padStart(2,'0')}`;
+        const tStr = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+        
+        let difStr = '';
+        let colorDif = 'var(--text-color)';
+        if (dif > 0) {
+            difStr = `+${Math.floor(dif/60)}:${String(dif%60).padStart(2,'0')}`;
+            colorDif = 'var(--success-color)';
+        } else if (dif < 0) {
+            const abs = Math.abs(dif);
+            difStr = `-${Math.floor(abs/60)}:${String(abs%60).padStart(2,'0')}`;
+            colorDif = 'var(--danger-color)';
+        } else {
+            difStr = '0:00';
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="font-weight:500;">${nombre}</td>
+            <td>${fStr}</td>
+            <td style="color:#8e8e93;">${tStr}</td>
+            <td style="color:${colorDif}; font-weight:600;">${difStr}</td>
+        `;
+        cuerpo.appendChild(tr);
     }
 
     function mostrarExportar() {
