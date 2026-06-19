@@ -43,7 +43,6 @@
         .sync-status {
             font-size: 0.8rem; color: var(--success-color); font-weight: 500;
             background: #1c2e24; border: 0.5px solid #30d158; padding: 4px 10px; border-radius: 12px;
-            cursor: pointer;
         }
 
         .container { width: 100%; max-width: 450px; box-sizing: border-box; padding: 16px; }
@@ -121,7 +120,7 @@
 
 <div class="app-header">
     <div class="header-title">Control de Jornada</div>
-    <div class="sync-status" id="statusSync" onclick="repararYForzarJunio()">✓ Sincronizado</div>
+    <div class="sync-status" id="statusSync">✓ Activo</div>
 </div>
 
 <div class="container">
@@ -231,19 +230,15 @@
     let historialAñoActivo = 2026;
     let historialMesActivo = 5; 
 
-    // Helper único centralizado para obtener las horas semanales según el año y mes
     function obtenerObjetivoSemanal(fechaStr) {
         const [yyyy, mm] = fechaStr.split('-').map(Number);
         if (yyyy < 2026) return 28;
-        if (yyyy === 2026 && mm < 6) return 28; // De Enero (1) a Mayo (5) -> 28h
-        return 35; // Junio (6) en adelante -> 35h
+        if (yyyy === 2026 && mm < 6) return 28; 
+        return 35; 
     }
 
-    // Helper único centralizado para obtener los minutos teóricos que corresponden a UN día laborable aislado
     function obtenerMinutosTeoricosDia(fechaStr) {
         const horasSemanales = obtenerObjetivoSemanal(fechaStr);
-        // 28h semanales / 5 días = 5.6h diarias (336 minutos)
-        // 35h semanales / 5 días = 7h diarias (420 minutos)
         return (horasSemanales / 5) * 60;
     }
 
@@ -277,10 +272,7 @@
         contenedor.innerHTML = '';
 
         if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, tramos: [] };
-        if (Array.isArray(baseDatos[fecha])) {
-            baseDatos[fecha] = { incidencia: false, tramos: varArray };
-        }
-
+        
         if (baseDatos[fecha].incidencia) {
             contenedor.innerHTML = '<div style="text-align:center; color:var(--warning-color); font-weight:600; padding: 15px 0;">✨ DÍA ESPECIAL COMPUTADO (0h)</div>';
             btnInc.innerText = '❌ Quitar Día Especial';
@@ -459,7 +451,6 @@
         const cuerpo = document.getElementById('cuerpoTablaMeses');
         cuerpo.innerHTML = '';
 
-        // Los meses pasados estáticos ya tienen su saldo inalterable calculado
         let mesesEstaticos = [
             { id: 0, nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
             { id: 1, nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
@@ -474,7 +465,6 @@
             inyectarFilaTablaResumen(m.nombre, m.fichado, m.teorico, m.saldo);
         });
 
-        // Cálculo dinámico para Junio del año activo (2026) en base a su recorrido completo
         let minsTeoricosJunio = 0; 
         let minsFichadosJunio = 0;
 
@@ -496,7 +486,7 @@
                 if (d <= diaHoyJunio || tieneFichajeFuturo) {
                     let esEspecial = reg && reg.incidencia === true;
                     if (!esEspecial) {
-                        minsTeoricosJunio += obtenerMinutosTeoricosDia(fechaKey); // Utiliza el helper dinámico (420 minutos / 7h)
+                        minsTeoricosJunio += obtenerMinutosTeoricosDia(fechaKey); 
                     }
                 }
             }
@@ -582,7 +572,6 @@
                 esEspecial = reg.incidencia === true;
             }
 
-            // Aplicación de la regla dinámica para el teórico diario (5.6h antes de Junio, 7h desde Junio en adelante)
             if (!esFinde && (d <= diaLimite || minsFichadosDia > 0 || esEspecial)) {
                 minsTeoricosDia = esEspecial ? 0 : obtenerMinutosTeoricosDia(fechaKey);
             }
@@ -599,7 +588,6 @@
 
             let cadenaFichada = esEspecial ? '<span class="badge-incidencia">ESPECIAL</span>' : `${Math.floor(minsFichadosDia/60)}h ${String(minsFichadosDia%60).padStart(2,'0')}m`;
             
-            // Formateo del teórico dinámico (para evitar decimales feos en la vista si son 5h 36m)
             let hTeorica = Math.floor(minsTeoricosDia / 60);
             let mTeorica = minsTeoricosDia % 60;
             let cadenaTeorica = mTeorica > 0 ? `${hTeorica}h ${mTeorica}m` : `${hTeorica}h`;
@@ -618,37 +606,6 @@
         if (!tieneRegistros) {
             cuerpoDiario.innerHTML = '<tr><td colspan="4" style="color:#666; text-align:center; padding: 15px 0;">No hay ningún registro para este mes.</td></tr>';
         }
-    }
-
-    function repararYForzarJunio() {
-        if (!confirm("Esto reorganizará de cero los fichajes de Junio con tus datos reales validados de la Intranet. ¿Continuar?")) return;
-        for (let key in baseDatos) { if (key.startsWith("2026-06-")) delete baseDatos[key]; }
-
-        baseDatos["2026-06-05"] = { incidencia: true, tramos: [] };
-        baseDatos["2026-06-08"] = { incidencia: true, tramos: [] };
-        baseDatos["2026-06-12"] = { incidencia: true, tramos: [] };
-
-        baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "09:08", salida: "11:48" }, { entrada: "15:40", salida: "20:14" }] };
-        baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:32", salida: "13:29" }, { entrada: "15:40", salida: "20:12" }] };
-        baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "15:41", salida: "20:21" }] };
-        baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "15:44", salida: "20:32" }] };
-        baseDatos["2026-06-06"] = { incidencia: false, tramos: [{ entrada: "14:34", salida: "21:10" }] };
-        baseDatos["2026-06-07"] = { incidencia: false, tramos: [{ entrada: "14:19", salida: "21:13" }] };
-        
-        baseDatos["2026-06-09"] = { incidencia: true, tramos: [] }; 
-        
-        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "10:26", salida: "15:07" }, { entrada: "15:23", salida: "17:45" }, { entrada: "18:53", salida: "21:47" }] };
-        baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:49", salida: "12:03" }, { entrada: "17:23", salida: "22:06" }] };
-        baseDatos["2026-06-13"] = { incidencia: false, tramos: [{ entrada: "14:25", salida: "20:55" }] };
-        baseDatos["2026-06-14"] = { incidencia: false, tramos: [{ entrada: "10:56", salida: "15:48" }] };
-        baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "13:58", salida: "19:59" }] };
-        baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "10:08", salida: "12:28" }, { entrada: "15:05", salida: "20:00" }] };
-        baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "10:15", salida: "12:28" }, { entrada: "15:11", salida: "20:24" }] };
-        
-        baseDatos["2026-06-18"] = { incidencia: false, tramos: [{ entrada: "08:53", salida: "13:46" }, { entrada: "15:01", salida: "19:44" }] };
-
-        guardarYActualizar();
-        alert("¡Mes de Junio purgado y sincronizado con tu portal al 100%! 🎉");
     }
 
     let modoBackup = '';
