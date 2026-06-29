@@ -20,6 +20,7 @@
             --warning-color: #ff9f0a;
             --border-color: #38383a;
             --detail-bg: #121212;
+            --car-color: #5ac8fa;
         }
 
         body {
@@ -80,22 +81,24 @@
             border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 8px;
         }
 
+        .btn-coche {
+            width: 100%; padding: 10px; background: #2c2c2e; color: var(--car-color);
+            border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 8px;
+        }
+
         .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
         .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
 
-        /* CSS ORIGINAL RESTAURADO Y BLINDADO PARA EL TERMÓMETRO */
         .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); box-sizing: border-box; }
         .thermometer-day:last-child { border-bottom: none; }
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
         .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
 
-        /* Estructura Limpia de Tabla Mensual (Estática) */
         .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
         .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
         .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
         .col-right { text-align: right; }
 
-        /* Estilos Bloque de Detalle Historial Diario */
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
         .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
@@ -118,13 +121,23 @@
             background-color: #483d11; color: var(--warning-color);
             padding: 2px 5px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; font-family: -apple-system, sans-serif;
         }
+        .badge-coche {
+            background-color: #163645; color: var(--car-color);
+            padding: 2px 5px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; font-family: -apple-system, sans-serif;
+            margin-left: 4px;
+        }
+
+        .contador-coche-container {
+            display: flex; justify-content: space-between; align-items: center; background: #121212; 
+            padding: 12px; border-radius: 10px; border: 0.5px solid var(--border-color); margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
 <div class="app-header">
     <div class="header-title">Control de Jornada</div>
-    <div class="sync-status" id="statusSync" onclick="repararYForzarJunio()">✓ Sincronizado</div>
+    <div class="sync-status" id="statusSync">✓ Sincronizado</div>
 </div>
 
 <div class="container">
@@ -150,6 +163,7 @@
         <div id="zonaBotonesDiarios">
             <button class="btn-add" onclick="agregarTramoVacio()">➕ Añadir Tramo</button>
             <button class="btn-incidencia" onclick="alternarIncidencia()">📅 Marcar Vacaciones / Asuntos Propios</button>
+            <button class="btn-coche" id="btnCocheDia" onclick="alternarCoche()">🚗 Marcar Uso de Coche</button>
         </div>
     </div>
 
@@ -198,6 +212,13 @@
                 <button class="nav-btn" onclick="navegarMesHistorial(1)">&gt;</button>
             </div>
         </div>
+
+        <!-- NUEVO: Contador mensual de uso del coche -->
+        <div class="contador-coche-container">
+            <div style="font-size: 0.9rem; font-weight: 500; color: #fff;">🚗 Uso de coche este mes:</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--car-color);" id="contadorCocheMes">0 días</div>
+        </div>
+
         <table class="diario-table">
             <thead>
                 <tr>
@@ -268,11 +289,23 @@
         const fecha = document.getElementById('fechaActual').value;
         const contenedor = document.getElementById('tramosContenedor');
         const btnInc = document.querySelector('.btn-incidencia');
+        const btnCoche = document.getElementById('btnCocheDia');
         contenedor.innerHTML = '';
 
-        if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, tramos: [] };
+        if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, coche: false, tramos: [] };
         if (Array.isArray(baseDatos[fecha])) {
-            baseDatos[fecha] = { incidencia: false, tramos: baseDatos[fecha] };
+            baseDatos[fecha] = { incidencia: false, coche: false, tramos: baseDatos[fecha] };
+        }
+
+        // Gestionar estado visual botón del coche
+        if (baseDatos[fecha].coche) {
+            btnCoche.innerText = '🚗 Coche Marcado';
+            btnCoche.style.background = '#163645';
+            btnCoche.style.color = 'var(--car-color)';
+        } else {
+            btnCoche.innerText = '🚗 Marcar Uso de Coche';
+            btnCoche.style.background = '#2c2c2e';
+            btnCoche.style.color = 'var(--car-color)';
         }
 
         if (baseDatos[fecha].incidencia) {
@@ -314,6 +347,13 @@
         const fecha = document.getElementById('fechaActual').value;
         baseDatos[fecha].incidencia = !baseDatos[fecha].incidencia;
         if (baseDatos[fecha].incidencia) baseDatos[fecha].tramos = [];
+        guardarYActualizar();
+    }
+
+    function alternarCoche() {
+        const fecha = document.getElementById('fechaActual').value;
+        if (!baseDatos[fecha]) baseDatos[fecha] = { incidencia: false, coche: false, tramos: [] };
+        baseDatos[fecha].coche = !baseDatos[fecha].coche;
         guardarYActualizar();
     }
 
@@ -399,12 +439,18 @@
 
             let tramosStr = 'Sin registros';
             const reg = baseDatos[ISOStr];
+            
+            // Añadir indicador de coche si aplica en los tramos del termómetro
+            let cocheIcono = (reg && reg.coche) ? ' 🚗' : '';
+
             if (reg && reg.incidencia) {
                 tramosStr = '<span class="badge-incidencia">DÍA ESPECIAL (LIBRE)</span>';
             } else if (reg && reg.tramos && reg.tramos.length > 0) {
                 let tTxt = [];
                 reg.tramos.forEach(t => { if(t.entrada && t.salida) tTxt.push(`${t.entrada} a ${t.salida}`);});
-                if (tTxt.length > 0) tramosStr = tTxt.join(' | ');
+                if (tTxt.length > 0) tramosStr = tTxt.join(' | ') + cocheIcono;
+            } else if (cocheIcono !== '') {
+                tramosStr = cocheIcono.trim();
             }
 
             const hE = Math.floor(minsEsteDia / 60);
@@ -415,272 +461,207 @@
             divDia.className = 'thermometer-day';
             divDia.innerHTML = `
                 <div class="thermometer-header ${esElDiaSeleccionado ? 'current-day-highlight' : ''}">
-                    <span>${nombreDia} (${diaBucle.getDate()}/${diaBucle.getMonth()+1}) ${esElDiaSeleccionado ? '📌' : ''}</span>
-                    <span style="color: ${minsEsteDia > 0 ? 'var(--success-color)' : '#666'}">${tDiaStr}</span>
+                    <span>${nombreDia} (${ISOStr.split('-')[2]})</span>
+                    <span>${tDiaStr}</span>
                 </div>
                 <div class="thermometer-tramos">${tramosStr}</div>
             `;
             desgloseContenedor.appendChild(divDia);
+
             diaBucle.setDate(diaBucle.getDate() + 1);
         }
 
-        const hSem = Math.floor(minutesTotalesSemana / 60);
-        const mSem = minutesTotalesSemana % 60;
-        document.getElementById('totalSemana').innerText = `${hSem}h ${String(mSem).padStart(2,'0')}m`;
-
-        const faltanMinutos = (objSemanal * 60) - minutesTotalesSemana;
-        const estadoLabel = document.getElementById('estadoSemana');
-
-        if (faltanMinutos > 0) {
-            estadoLabel.innerText = `Faltan ${Math.floor(faltanMinutos/60)}h ${String(faltanMinutos%60).padStart(2,'0')}m`;
-            estadoLabel.style.color = 'var(--accent-color)';
-        } else if (faltanMinutos === 0) {
-            estadoLabel.innerText = '¡Objetivo cumplido! 🎉';
-            estadoLabel.style.color = 'var(--success-color)';
+        const minsObjetivoSemana = objSemanal * 60;
+        document.getElementById('totalSemana').innerText = `${Math.floor(minutesTotalesSemana / 60)}h ${String(minutesTotalesSemana % 60).padStart(2, '0')}m`;
+        
+        let restanteMins = minsObjetivoSemana - minutesTotalesSemana;
+        const estadoSemana = document.getElementById('estadoSemana');
+        if (restanteMins <= 0) {
+            estadoSemana.innerText = `¡Completada! (+${tabularMinsStr(Math.abs(restanteMins))})`;
+            estadoSemana.style.color = 'var(--success-color)';
         } else {
-            const extra = Math.abs(faltanMinutos);
-            estadoLabel.innerText = `Horas Extra: +${Math.floor(extra/60)}h ${String(extra%60).padStart(2,'0')}m`;
-            estadoLabel.style.color = 'var(--success-color)';
+            estadoSemana.innerText = `${Math.floor(restanteMins / 60)}h ${String(restanteMins % 60).padStart(2, '0')} restantes`;
+            estadoSemana.style.color = 'var(--accent-color)';
         }
 
-        let porcentaje = ((minutesTotalesSemana / 60) / objSemanal) * 100;
-        if (porcentaje > 100) porcentaje = 100;
-        document.getElementById('progressBar').style.width = `${porcentaje}%`;
-        document.getElementById('progressPct').innerText = `${Math.floor(porcentaje)}%`;
+        let pct = Math.min(100, Math.round((minutesTotalesSemana / minsObjetivoSemana) * 100));
+        if (isNaN(pct)) pct = 0;
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressPct').innerText = pct + '%';
+    }
+
+    function obtenerDiasLaborablesYTeoricosMes(año, mes) {
+        let totalMinutosTeoricos = 0;
+        let diasMapeados = {};
+        const numDias = new Date(año, mes + 1, 0).getDate();
+
+        for (let d = 1; d <= numDias; d++) {
+            const fechaBucle = new Date(año, mes, d);
+            const ISOStr = formatearFechaLocalISO(fechaBucle);
+            const diaSemana = fechaBucle.getDay();
+            
+            let minsTeoricosDia = 0;
+            if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a Viernes
+                const objSemanal = obtenerObjetivoSemanal(ISOStr);
+                minsTeoricosDia = (objSemanal === 28) ? (5 * 60 + 36) : (7 * 60); // 5h36m o 7h
+            }
+
+            diasMapeados[ISOStr] = minsTeoricosDia;
+            totalMinutosTeoricos += minsTeoricosDia;
+        }
+        return { totalMinutosTeoricos, diasMapeados };
     }
 
     function dibujarTablaYCalcularGlobal() {
-        const cuerpo = document.getElementById('cuerpoTablaMeses');
-        cuerpo.innerHTML = '';
+        const tBody = document.getElementById('cuerpoTablaMeses');
+        tBody.innerHTML = '';
+        
+        let saldoGlobalMins = 0;
+        const mesesVisibles = [4, 5]; // Mayo y Junio en tu cuadrante
 
-        let mesesEstaticos = [
-            { id: 0, nombre: 'Enero',    fichado: 75*60 + 57,  teorico: 95*60 + 12,  saldo: (75*60 + 57) - (95*60 + 12) },
-            { id: 1, nombre: 'Febrero',  fichado: 117*60 + 5,  teorico: 112*60 + 0,  saldo: (117*60 + 5) - (112*60 + 0) },
-            { id: 2, nombre: 'Marzo',    fichado: 96*60 + 17,  teorico: 106*60 + 24, saldo: (96*60 + 17) - (106*60 + 24) },
-            { id: 3, nombre: 'Abril',    fichado: 79*60 + 2,   teorico: 95*60 + 12,  saldo: (79*60 + 2) - (95*60 + 12) },
-            { id: 4, nombre: 'Mayo',     fichado: 99*60 + 8,   teorico: 100*60 + 48, saldo: (99*60 + 8) - (100*60 + 48) }
-        ];
-
-        let acumuladoSaldosPasados = 0;
-        mesesEstaticos.forEach(m => {
-            acumuladoSaldosPasados += m.saldo;
-            inyectarFilaTablaResumen(m.nombre, m.fichado, m.teorico, m.saldo);
-        });
-
-        let minsTeoricosJunio = 84 * 60; 
-        let minsFichadosJunio = 0;
-
-        for (let d = 1; d <= 30; d++) {
-            let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
-            minsFichadosJunio += calcularMinutosDeUnDia(fechaKey);
-        }
-
-        const fechaHoy = new Date();
-        const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
-
-        for (let d = 18; d <= 30; d++) {
-            let fechaKey = `2026-06-${String(d).padStart(2, '0')}`;
-            let reg = baseDatos[fechaKey];
+        mesesVisibles.forEach(mIdx => {
+            const año = 2026;
+            const { totalMinutosTeoricos, diasMapeados } = obtenerDiasLaborablesYTeoricosMes(año, mIdx);
             
-            let dObj = new Date(2026, 5, d); 
-            let diaSemana = dObj.getDay();
-            let esFinde = (diaSemana === 0 || diaSemana === 6);
-
-            if (!esFinde) {
-                let tieneFichajeFuturo = reg && (calcularMinutosDeUnDia(fechaKey) > 0 || reg.incidencia === true);
-                if (d <= diaHoyJunio || tieneFichajeFuturo) {
-                    let esEspecial = reg && reg.incidencia === true;
-                    if (!esEspecial) {
-                        minsTeoricosJunio += 7 * 60;
+            let minutosFichadosMes = 0;
+            for (const fechaStr in diasMapeados) {
+                const reg = baseDatos[fechaStr];
+                if (reg) {
+                    if (reg.incidencia) {
+                        // Si es especial/vacaciones, no resta saldo (fichado = teorico)
+                        minutosFichadosMes += diasMapeados[fechaStr];
+                    } else {
+                        minutosFichadosMes += calcularMinutosDeUnDia(fechaStr);
                     }
                 }
             }
-        }
 
-        let saldoJunio = minsFichadosJunio - minsTeoricosJunio;
-        inyectarFilaTablaResumen('Junio', minsFichadosJunio, minsTeoricosJunio, saldoJunio);
+            let saldoMesMins = minutosFichadosMes - totalMinutosTeoricos;
+            saldoGlobalMins += saldoMesMins;
 
-        let saldoGlobalMinutos = acumuladoSaldosPasados + saldoJunio;
-        const panelGlobal = document.getElementById('saldoGlobalTotal');
-        
-        if (saldoGlobalMinutos > 0) {
-            panelGlobal.style.color = 'var(--success-color)';
-        } else if (saldoGlobalMinutos < 0) {
-            panelGlobal.style.color = 'var(--danger-color)';
-        } else {
-            panelGlobal.style.color = 'var(--text-color)';
-        }
+            const tr = document.createElement('tr');
+            const colorSaldo = saldoMesMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+            tr.innerHTML = `
+                <td>${mesesNombres[mIdx]} ${año}</td>
+                <td class="col-right">${tabularMinsStr(minutosFichadosMes)}</td>
+                <td class="col-right">${tabularMinsStr(totalMinutosTeoricos)}</td>
+                <td class="col-right" style="color: ${colorSaldo}; font-weight:600;">${tabularMinsStr(saldoMesMins)}</td>
+            `;
+            tBody.appendChild(tr);
+        });
 
-        panelGlobal.innerText = tabularMinsStr(saldoGlobalMinutos);
-    }
-
-    function inyectarFilaTablaResumen(nombre, f, t, dif) {
-        const cuerpo = document.getElementById('cuerpoTablaMeses');
-        const fStr = `${Math.floor(f/60)}:${String(f%60).padStart(2,'0')}`;
-        const tStr = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-        
-        let difStr = tabularMinsStr(dif);
-        let colorDif = 'var(--text-color)';
-        if (dif > 0) colorDif = 'var(--success-color)';
-        if (dif < 0) colorDif = 'var(--danger-color)';
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td style="font-weight:500; color:var(--accent-color);">${nombre}</td>
-            <td class="col-right">${fStr}</td>
-            <td class="col-right" style="color:#8e8e93;">${tStr}</td>
-            <td class="col-right" style="color:${colorDif}; font-weight:600;">${difStr}</td>
-        `;
-        cuerpo.appendChild(tr);
-    }
-
-    function navegarMesHistorial(direccion) {
-        historialMesActivo += direccion;
-        if (historialMesActivo > 11) {
-            historialMesActivo = 0;
-            historialAñoActivo += 1;
-        } else if (historialMesActivo < 0) {
-            historialMesActivo = 11;
-            historialAñoActivo -= 1;
-        }
-        dibujarBloqueDiarioHistorial();
+        const globalDiv = document.getElementById('saldoGlobalTotal');
+        globalDiv.innerText = tabularMinsStr(saldoGlobalMins);
+        globalDiv.style.color = saldoGlobalMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
     }
 
     function dibujarBloqueDiarioHistorial() {
         document.getElementById('labelMesHistorial').innerText = `${mesesNombres[historialMesActivo]} ${historialAñoActivo}`;
-        const cuerpoDiario = document.getElementById('cuerpoDiarioHistorial');
-        cuerpoDiario.innerHTML = '';
+        const tBody = document.getElementById('cuerpoDiarioHistorial');
+        tBody.innerHTML = '';
 
-        const totalDiasMes = new Date(historialAñoActivo, historialMesActivo + 1, 0).getDate();
-        let tieneRegistros = false;
+        const { diasMapeados } = obtenerDiasLaborablesYTeoricosMes(historialAñoActivo, historialMesActivo);
+        const numDias = new Date(historialAñoActivo, historialMesActivo + 1, 0).getDate();
+        
+        let contadorCoche = 0;
 
-        const fechaHoy = new Date();
-        const diaHoyJunio = (fechaHoy.getFullYear() === 2026 && fechaHoy.getMonth() === 5) ? fechaHoy.getDate() : 30;
+        for (let d = 1; d <= numDias; d++) {
+            const fechaBucle = new Date(historialAñoActivo, historialMesActivo, d);
+            const ISOStr = formatearFechaLocalISO(fechaBucle);
+            const diaSemana = fechaBucle.getDay();
+            const labelDia = `${String(d).padStart(2,'0')} ${nombresDias[diaSemana]}`;
 
-        for (let d = 1; d <= totalDiasMes; d++) {
-            let fechaKey = `${historialAñoActivo}-${String(historialMesActivo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            let reg = baseDatos[fechaKey];
-
-            let minsFichadosDia = 0;
-            let minsTeoricosDia = 0;
+            let minsFichados = 0;
+            let minsTeoricos = diasMapeados[ISOStr] || 0;
             let esEspecial = false;
-            let esFinde = false;
+            let insigniaCocheHtml = '';
 
-            let dObj = new Date(historialAñoActivo, historialMesActivo, d);
-            let diaSemanaIndex = dObj.getDay();
-            esFinde = (diaSemanaIndex === 0 || diaSemanaIndex === 6);
-            let etiquetaDia = `${nombresDias[diaSemanaIndex]} ${String(d).padStart(2, '0')}`;
-
+            const reg = baseDatos[ISOStr];
             if (reg) {
-                minsFichadosDia = calcularMinutosDeUnDia(fechaKey);
-                esEspecial = reg.incidencia === true;
-            }
-
-            if (historialAñoActivo === 2026 && historialMesActivo === 5) { 
-                if (d < 18) {
-                    minsTeoricosDia = (esFinde || esEspecial) ? 0 : 7 * 60;
+                if (reg.coche) {
+                    contadorCoche++;
+                    insigniaCocheHtml = '<span class="badge-coche">🚗</span>';
+                }
+                if (reg.incidencia) {
+                    esEspecial = true;
+                    minsFichados = minsTeoricos; 
                 } else {
-                    if (!esFinde && (d <= diaHoyJunio || minsFichadosDia > 0 || esEspecial)) {
-                        minsTeoricosDia = esEspecial ? 0 : 7 * 60;
-                    }
-                }
-            } else {
-                if (!esFinde && (minsFichadosDia > 0 || esEspecial)) {
-                    minsTeoricosDia = esEspecial ? 0 : 7 * 60;
+                    minsFichados = calcularMinutosDeUnDia(ISOStr);
                 }
             }
 
-            const esDiaDelPicker = (fechaKey === document.getElementById('fechaActual').value);
-            if (minsFichadosDia === 0 && !esEspecial && !esDiaDelPicker) continue;
+            let saldoDia = minsFichados - minsTeoricos;
+            let colorSaldo = '#fff';
+            if (saldoDia > 0 && !esEspecial) colorSaldo = 'var(--success-color)';
+            if (saldoDia < 0 && !esEspecial) colorSaldo = 'var(--danger-color)';
 
-            tieneRegistros = true;
-            let saldoDia = minsFichadosDia - minsTeoricosDia;
-            
-            let colorSaldo = 'var(--text-color)';
-            if (saldoDia > 0) colorSaldo = 'var(--success-color)';
-            if (saldoDia < 0) colorSaldo = 'var(--danger-color)';
+            let txtFichado = tabularMinsStr(minsFichados);
+            let txtTeorico = tabularMinsStr(minsTeoricos);
+            let txtSaldo = tabularMinsStr(saldoDia);
 
-            let cadenaFichada = esEspecial ? '<span class="badge-incidencia">ESPECIAL</span>' : `${Math.floor(minsFichadosDia/60)}h ${String(minsFichadosDia%60).padStart(2,'0')}m`;
-            let cadenaTeorica = `${Math.floor(minsTeoricosDia/60)}h`;
+            if (esEspecial) {
+                txtFichado = '-';
+                txtTeorico = '-';
+                txtSaldo = '✨';
+                colorSaldo = 'var(--warning-color)';
+            } else if (minsFichados === 0 && minsTeoricos === 0) {
+                txtFichado = '-';
+                txtTeorico = '-';
+                txtSaldo = '-';
+                colorSaldo = '#8e8e93';
+            }
 
             const tr = document.createElement('tr');
-            if (esDiaDelPicker) tr.style.backgroundColor = '#1c1c1e'; 
+            if (formatearFechaLocalISO(new Date()) === ISOStr) {
+                tr.style.background = '#1c1c1e';
+            }
             tr.innerHTML = `
-                <td class="diario-day-label ${esDiaDelPicker ? 'current-day-highlight' : ''}">${etiquetaDia} ${esDiaDelPicker ? '📌' : ''}</td>
-                <td style="text-align: right;">${cadenaFichada}</td>
-                <td style="text-align: right; color:#8e8e93;">${cadenaTeorica}</td>
-                <td style="text-align: right; color:${colorSaldo}; font-weight:600;">${saldoDia >= 0 ? '+' : ''}${tabularMinsStr(saldoDia)}</td>
+                <td class="diario-day-label">${labelDia}${insigniaCocheHtml}</td>
+                <td style="text-align: right;">${txtFichado}</td>
+                <td style="text-align: right;">${txtTeorico}</td>
+                <td style="text-align: right; color:${colorSaldo}; font-weight:500;">${txtSaldo}</td>
             `;
-            cuerpoDiario.appendChild(tr);
+            tBody.appendChild(tr);
         }
 
-        if (!tieneRegistros) {
-            cuerpoDiario.innerHTML = '<tr><td colspan="4" style="color:#666; text-align:center; padding: 15px 0;">No hay ningún registro para este mes.</td></tr>';
-        }
+        // Actualizar el contador acumulado del coche en la caja del mes
+        document.getElementById('contadorCocheMes').innerText = `${contadorCoche} ${contadorCoche === 1 ? 'día' : 'días'}`;
     }
 
-    function repararYForzarJunio() {
-        if (!confirm("Esto reorganizará de cero los fichajes de Junio con tus datos reales validados de la Intranet. ¿Continuar?")) return;
-        for (let key in baseDatos) { if (key.startsWith("2026-06-")) delete baseDatos[key]; }
-
-        baseDatos["2026-06-05"] = { incidencia: true, tramos: [] };
-        baseDatos["2026-06-08"] = { incidencia: true, tramos: [] };
-        baseDatos["2026-06-12"] = { incidencia: true, tramos: [] };
-
-        baseDatos["2026-06-01"] = { incidencia: false, tramos: [{ entrada: "09:08", salida: "11:48" }, { entrada: "15:40", salida: "20:14" }] };
-        baseDatos["2026-06-02"] = { incidencia: false, tramos: [{ entrada: "08:32", salida: "13:29" }, { entrada: "15:40", salida: "20:12" }] };
-        baseDatos["2026-06-03"] = { incidencia: false, tramos: [{ entrada: "15:41", salida: "20:21" }] };
-        baseDatos["2026-06-04"] = { incidencia: false, tramos: [{ entrada: "15:44", salida: "20:32" }] };
-        baseDatos["2026-06-06"] = { incidencia: false, tramos: [{ entrada: "14:34", salida: "21:10" }] };
-        baseDatos["2026-06-07"] = { incidencia: false, tramos: [{ entrada: "14:19", salida: "21:13" }] };
-        
-        baseDatos["2026-06-09"] = { incidencia: true, tramos: [] }; 
-        
-        baseDatos["2026-06-10"] = { incidencia: false, tramos: [{ entrada: "10:26", salida: "15:07" }, { entrada: "15:23", salida: "17:45" }, { entrada: "18:53", salida: "21:47" }] };
-        baseDatos["2026-06-11"] = { incidencia: false, tramos: [{ entrada: "08:49", salida: "12:03" }, { entrada: "17:23", salida: "22:06" }] };
-        baseDatos["2026-06-13"] = { incidencia: false, tramos: [{ entrada: "14:25", salida: "20:55" }] };
-        baseDatos["2026-06-14"] = { incidencia: false, tramos: [{ entrada: "10:56", salida: "15:48" }] };
-        baseDatos["2026-06-15"] = { incidencia: false, tramos: [{ entrada: "13:58", salida: "19:59" }] };
-        baseDatos["2026-06-16"] = { incidencia: false, tramos: [{ entrada: "10:08", salida: "12:28" }, { entrada: "15:05", salida: "20:00" }] };
-        baseDatos["2026-06-17"] = { incidencia: false, tramos: [{ entrada: "10:15", salida: "12:28" }, { entrada: "15:11", salida: "20:24" }] };
-        
-        baseDatos["2026-06-18"] = { incidencia: false, tramos: [{ entrada: "08:53", salida: "13:46" }, { entrada: "15:01", salida: "19:44" }] };
-
-        guardarYActualizar();
-        alert("¡Mes de Junio purgado y sincronizado con tu portal al 100%! 🎉");
+    function navegarMesHistorial(direccion) {
+        historialMesActivo += direccion;
+        if (historialMesActivo > 11) { historialMesActivo = 0; historialAñoActivo++; }
+        if (historialMesActivo < 0) { historialMesActivo = 11; historialAñoActivo--; }
+        dibujarBloqueDiarioHistorial();
     }
 
-    let modoBackup = '';
+    // Funciones básicas para paneles de Backup (Mantenidas para compatibilidad)
     function mostrarExportar() {
-        modoBackup = 'exportar';
         document.getElementById('panelBackup').style.display = 'block';
-        document.getElementById('backupTitle').innerText = 'Copia generada:';
+        document.getElementById('backupTitle').innerText = 'Copiar Backup';
         document.getElementById('txtBackup').value = JSON.stringify(baseDatos);
-        document.getElementById('btnAccionBackup').innerText = 'Entendido';
         document.getElementById('txtBackup').select();
     }
-
     function mostrarImportar() {
-        modoBackup = 'importar';
         document.getElementById('panelBackup').style.display = 'block';
-        document.getElementById('backupTitle').innerText = 'Pega la copia aquí:';
+        document.getElementById('backupTitle').innerText = 'Pegar Backup anterior';
         document.getElementById('txtBackup').value = '';
-        document.getElementById('btnAccionBackup').innerText = 'Restaurar Datos';
+        document.getElementById('txtBackup').placeholder = 'Pega el texto JSON aquí...';
     }
-
     function procesarAccionBackup() {
-        if (modoBackup === 'importar') {
-            const texto = document.getElementById('txtBackup').value;
-            if (texto) {
-                try {
-                    baseDatos = JSON.parse(texto);
-                    localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
-                    inicializar();
-                    alert('¡Datos sincronizados!');
-                } catch(e) { alert('Error en el texto.'); }
+        const txt = document.getElementById('txtBackup').value.trim();
+        if (txt && document.getElementById('backupTitle').innerText.includes('Pegar')) {
+            try {
+                const parsed = JSON.parse(txt);
+                baseDatos = parsed;
+                localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+                alert('¡Copia de seguridad restaurada!');
+            } catch(e) {
+                alert('Error al procesar el JSON.');
             }
         }
         document.getElementById('panelBackup').style.display = 'none';
+        cargarDiaActual();
     }
 
     window.onload = inicializar;
