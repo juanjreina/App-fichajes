@@ -94,11 +94,6 @@
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
         .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
 
-        .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
-        .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
-        .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
-        .col-right { text-align: right; }
-
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
         .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
@@ -188,22 +183,6 @@
     </div>
 
     <div class="card">
-        <div class="section-title">Resumen Mensual Acumulado</div>
-        <table class="tabla-meses">
-            <thead>
-                <tr>
-                    <th>Mes</th>
-                    <th class="col-right">Fichado</th>
-                    <th class="col-right">Teórico</th>
-                    <th class="col-right">Saldo</th>
-                </tr>
-            </thead>
-            <tbody id="cuerpoTablaMeses">
-            </tbody>
-        </table>
-    </div>
-
-    <div class="card">
         <div class="history-header-block">
             <div class="section-title" style="margin:0;">Detalle Diario</div>
             <div class="month-navigation">
@@ -213,7 +192,6 @@
             </div>
         </div>
 
-        <!-- NUEVO: Contador mensual de uso del coche -->
         <div class="contador-coche-container">
             <div style="font-size: 0.9rem; font-weight: 500; color: #fff;">🚗 Uso de coche este mes:</div>
             <div style="font-size: 1.1rem; font-weight: 700; color: var(--car-color);" id="contadorCocheMes">0 días</div>
@@ -297,7 +275,6 @@
             baseDatos[fecha] = { incidencia: false, coche: false, tramos: baseDatos[fecha] };
         }
 
-        // Gestionar estado visual botón del coche
         if (baseDatos[fecha].coche) {
             btnCoche.innerText = '🚗 Coche Marcado';
             btnCoche.style.background = '#163645';
@@ -440,7 +417,6 @@
             let tramosStr = 'Sin registros';
             const reg = baseDatos[ISOStr];
             
-            // Añadir indicador de coche si aplica en los tramos del termómetro
             let cocheIcono = (reg && reg.coche) ? ' 🚗' : '';
 
             if (reg && reg.incidencia) {
@@ -490,65 +466,44 @@
         document.getElementById('progressPct').innerText = pct + '%';
     }
 
-    function obtenerDiasLaborablesYTeoricosMes(año, mes) {
-        let totalMinutosTeoricos = 0;
-        let diasMapeados = {};
-        const numDias = new Date(año, mes + 1, 0).getDate();
-
-        for (let d = 1; d <= numDias; d++) {
-            const fechaBucle = new Date(año, mes, d);
-            const ISOStr = formatearFechaLocalISO(fechaBucle);
-            const diaSemana = fechaBucle.getDay();
-            
-            let minsTeoricosDia = 0;
-            if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a Viernes
-                const objSemanal = obtenerObjetivoSemanal(ISOStr);
-                minsTeoricosDia = (objSemanal === 28) ? (5 * 60 + 36) : (7 * 60); // 5h36m o 7h
-            }
-
-            diasMapeados[ISOStr] = minsTeoricosDia;
-            totalMinutosTeoricos += minsTeoricosDia;
-        }
-        return { totalMinutosTeoricos, diasMapeados };
+    function obtenerTeoricoPorDiaISO(fechaStr) {
+        const [yyyy, mm, dd] = fechaStr.split('-').map(Number);
+        const fecha = new Date(yyyy, mm - 1, dd);
+        const diaSemana = fecha.getDay();
+        
+        // Fines de semana no tienen jornada teórica
+        if (diaSemana === 0 || diaSemana === 6) return 0;
+        
+        const objSemanal = obtenerObjetivoSemanal(fechaStr);
+        // Si el objetivo es 28h -> 5h 36m al día (336 minutos). Si es 35h -> 7h al día (420 minutos).
+        return (objSemanal === 28) ? 336 : 420;
     }
 
+    // EL MOTOR ORIGINAL RECUPERADO: Suma día a día solo los saldos reales desde Enero
     function dibujarTablaYCalcularGlobal() {
-        const tBody = document.getElementById('cuerpoTablaMeses');
-        tBody.innerHTML = '';
-        
         let saldoGlobalMins = 0;
-        const mesesVisibles = [4, 5]; // Mayo y Junio en tu cuadrante
 
-        mesesVisibles.forEach(mIdx => {
-            const año = 2026;
-            const { totalMinutosTeoricos, diasMapeados } = obtenerDiasLaborablesYTeoricosMes(año, mIdx);
-            
-            let minutosFichadosMes = 0;
-            for (const fechaStr in diasMapeados) {
-                const reg = baseDatos[fechaStr];
-                if (reg) {
-                    if (reg.incidencia) {
-                        // Si es especial/vacaciones, no resta saldo (fichado = teorico)
-                        minutosFichadosMes += diasMapeados[fechaStr];
-                    } else {
-                        minutosFichadosMes += calcularMinutosDeUnDia(fechaStr);
-                    }
+        // Sumamos única y exclusivamente el saldo de los días reales que existen en la base de datos
+        for (const fechaStr in baseDatos) {
+            const reg = baseDatos[fechaStr];
+            if (!reg) continue;
+
+            // Filtramos tramos vacíos por compatibilidad de arrays antiguos
+            let tieneFichajes = (reg.tramos && reg.tramos.length > 0);
+            let esIncidencia = reg.incidencia;
+
+            if (tieneFichajes || esIncidencia) {
+                let teoricoDia = obtenerTeoricoPorDiaISO(fechaStr);
+                
+                if (esIncidencia) {
+                    // Días especiales/vacaciones ni suman ni restan saldo (saldo 0)
+                    saldoGlobalMins += 0;
+                } else {
+                    let fichadoDia = calcularMinutosDeUnDia(fechaStr);
+                    saldoGlobalMins += (fichadoDia - teoricoDia);
                 }
             }
-
-            let saldoMesMins = minutosFichadosMes - totalMinutosTeoricos;
-            saldoGlobalMins += saldoMesMins;
-
-            const tr = document.createElement('tr');
-            const colorSaldo = saldoMesMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
-            tr.innerHTML = `
-                <td>${mesesNombres[mIdx]} ${año}</td>
-                <td class="col-right">${tabularMinsStr(minutosFichadosMes)}</td>
-                <td class="col-right">${tabularMinsStr(totalMinutosTeoricos)}</td>
-                <td class="col-right" style="color: ${colorSaldo}; font-weight:600;">${tabularMinsStr(saldoMesMins)}</td>
-            `;
-            tBody.appendChild(tr);
-        });
+        }
 
         const globalDiv = document.getElementById('saldoGlobalTotal');
         globalDiv.innerText = tabularMinsStr(saldoGlobalMins);
@@ -560,9 +515,7 @@
         const tBody = document.getElementById('cuerpoDiarioHistorial');
         tBody.innerHTML = '';
 
-        const { diasMapeados } = obtenerDiasLaborablesYTeoricosMes(historialAñoActivo, historialMesActivo);
         const numDias = new Date(historialAñoActivo, historialMesActivo + 1, 0).getDate();
-        
         let contadorCoche = 0;
 
         for (let d = 1; d <= numDias; d++) {
@@ -572,7 +525,7 @@
             const labelDia = `${String(d).padStart(2,'0')} ${nombresDias[diaSemana]}`;
 
             let minsFichados = 0;
-            let minsTeoricos = diasMapeados[ISOStr] || 0;
+            let minsTeoricos = obtenerTeoricoPorDiaISO(ISOStr);
             let esEspecial = false;
             let insigniaCocheHtml = '';
 
@@ -624,7 +577,6 @@
             tBody.appendChild(tr);
         }
 
-        // Actualizar el contador acumulado del coche en la caja del mes
         document.getElementById('contadorCocheMes').innerText = `${contadorCoche} ${contadorCoche === 1 ? 'día' : 'días'}`;
     }
 
@@ -632,10 +584,10 @@
         historialMesActivo += direccion;
         if (historialMesActivo > 11) { historialMesActivo = 0; historialAñoActivo++; }
         if (historialMesActivo < 0) { historialMesActivo = 11; historialAñoActivo--; }
+        
         dibujarBloqueDiarioHistorial();
     }
 
-    // Funciones básicas para paneles de Backup (Mantenidas para compatibilidad)
     function mostrarExportar() {
         document.getElementById('panelBackup').style.display = 'block';
         document.getElementById('backupTitle').innerText = 'Copiar Backup';
@@ -648,19 +600,34 @@
         document.getElementById('txtBackup').value = '';
         document.getElementById('txtBackup').placeholder = 'Pega el texto JSON aquí...';
     }
+
     function procesarAccionBackup() {
         const txt = document.getElementById('txtBackup').value.trim();
-        if (txt && document.getElementById('backupTitle').innerText.includes('Pegar')) {
+        
+        if (txt) {
             try {
                 const parsed = JSON.parse(txt);
-                baseDatos = parsed;
-                localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
-                alert('¡Copia de seguridad restaurada!');
+                if (typeof parsed === 'object' && parsed !== null) {
+                    baseDatos = parsed;
+                    localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+                    alert('¡Copia de seguridad restaurada con éxito!');
+                } else {
+                    alert('El formato de la copia no es válido.');
+                }
             } catch(e) {
-                alert('Error al procesar el JSON.');
+                alert('Error al procesar el JSON. Asegúrate de copiar todo el texto.');
+                console.error(e);
             }
         }
+        
         document.getElementById('panelBackup').style.display = 'none';
+        
+        const fechaActualInput = document.getElementById('fechaActual').value;
+        if (fechaActualInput) {
+            const [y, m] = fechaActualInput.split('-').map(Number);
+            historialAñoActivo = y;
+            historialMesActivo = m - 1;
+        }
         cargarDiaActual();
     }
 
