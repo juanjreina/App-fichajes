@@ -515,32 +515,31 @@
         
         let saldoGlobalMins = 0;
         
-        // Bucle dinámico que calcula desde Enero (0) hasta el mes que tienes activo en pantalla
         for (let mIdx = 0; mIdx <= historialMesActivo; mIdx++) {
             const año = historialAñoActivo;
             const { totalMinutosTeoricos, diasMapeados } = obtenerDiasLaborablesYTeoricosMes(año, mIdx);
             
-            let minutosFichadosMes = 0;
+            let minutesFichadosMes = 0;
 
             for (const fechaStr in diasMapeados) {
                 const reg = baseDatos[fechaStr];
                 if (reg) {
                     if (reg.incidencia) {
-                        minutosFichadosMes += diasMapeados[fechaStr];
+                        minutesFichadosMes += diasMapeados[fechaStr];
                     } else {
-                        minutosFichadosMes += calcularMinutosDeUnDia(fechaStr);
+                        minutesFichadosMes += calcularMinutosDeUnDia(fechaStr);
                     }
                 }
             }
 
-            let saldoMesMins = minutosFichadosMes - totalMinutosTeoricos;
+            let saldoMesMins = minutesFichadosMes - totalMinutosTeoricos;
             saldoGlobalMins += saldoMesMins;
 
             const tr = document.createElement('tr');
             const colorSaldo = saldoMesMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
             tr.innerHTML = `
                 <td>${mesesNombres[mIdx]} ${año}</td>
-                <td class="col-right">${tabularMinsStr(minutosFichadosMes)}</td>
+                <td class="col-right">${tabularMinsStr(minutesFichadosMes)}</td>
                 <td class="col-right">${tabularMinsStr(totalMinutosTeoricos)}</td>
                 <td class="col-right" style="color: ${colorSaldo}; font-weight:600;">${tabularMinsStr(saldoMesMins)}</td>
             `;
@@ -629,7 +628,6 @@
         if (historialMesActivo > 11) { historialMesActivo = 0; historialAñoActivo++; }
         if (historialMesActivo < 0) { historialMesActivo = 11; historialAñoActivo--; }
         
-        // Al navegar por los meses se actualiza tanto la tabla mensual como la bolsa acumulada automáticamente
         dibujarTablaYCalcularGlobal();
         dibujarBloqueDiarioHistorial();
     }
@@ -646,19 +644,35 @@
         document.getElementById('txtBackup').value = '';
         document.getElementById('txtBackup').placeholder = 'Pega el texto JSON aquí...';
     }
+
+    // FUNCIÓN BLINDADA Y CORREGIDA AQUÍ
     function procesarAccionBackup() {
         const txt = document.getElementById('txtBackup').value.trim();
-        if (txt && document.getElementById('backupTitle').innerText.includes('Pegar')) {
+        
+        if (txt) {
             try {
                 const parsed = JSON.parse(txt);
-                baseDatos = parsed;
-                localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
-                alert('¡Copia de seguridad restaurada!');
+                if (typeof parsed === 'object' && parsed !== null) {
+                    baseDatos = parsed;
+                    localStorage.setItem('registro_calendario_v3', JSON.stringify(baseDatos));
+                    alert('¡Copia de seguridad restaurada con éxito!');
+                } else {
+                    alert('El formato de la copia no es válido.');
+                }
             } catch(e) {
-                alert('Error al procesar el JSON.');
+                alert('Error al procesar el JSON. Asegúrate de copiar todo el texto.');
+                console.error(e);
             }
         }
+        
         document.getElementById('panelBackup').style.display = 'none';
+        
+        const fechaActualInput = document.getElementById('fechaActual').value;
+        if (fechaActualInput) {
+            const [y, m] = fechaActualInput.split('-').map(Number);
+            historialAñoActivo = y;
+            historialMesActivo = m - 1;
+        }
         cargarDiaActual();
     }
 
