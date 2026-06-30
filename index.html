@@ -509,41 +509,62 @@
         return { totalMinutosTeoricos, diasMapeados };
     }
 
+    // NUEVO MOTOR DE CÁLCULO INTELIGENTE RETROACTIVO DESDE ENERO
     function dibujarTablaYCalcularGlobal() {
         const tBody = document.getElementById('cuerpoTablaMeses');
         tBody.innerHTML = '';
         
         let saldoGlobalMins = 0;
         
+        // Recorremos dinámicamente desde Enero (0) hasta el mes activo en tu pantalla
         for (let mIdx = 0; mIdx <= historialMesActivo; mIdx++) {
             const año = historialAñoActivo;
-            const { totalMinutosTeoricos, diasMapeados } = obtenerDiasLaborablesYTeoricosMes(año, mIdx);
+            const { diasMapeados } = obtenerDiasLaborablesYTeoricosMes(año, mIdx);
             
-            let minutesFichadosMes = 0;
+            let minutosFichadosMes = 0;
+            let minutosTeoricosMesCalculados = 0;
+            let mesTieneActividad = false;
 
             for (const fechaStr in diasMapeados) {
                 const reg = baseDatos[fechaStr];
-                if (reg) {
+                const minsTeoricosDia = diasMapeados[fechaStr];
+
+                // Si el día tiene fichajes, o es fin de semana con horas, o está marcado como Libre
+                if (reg && (reg.incidencia || (reg.tramos && reg.tramos.length > 0) || reg.coche)) {
+                    mesTieneActividad = true;
+                    minutosTeoricosMesCalculados += minsTeoricosDia; // Sumamos su teórico real
+
                     if (reg.incidencia) {
-                        minutesFichadosMes += diasMapeados[fechaStr];
+                        minutosFichadosMes += minsTeoricosDia; // Día especial computa al 100%
                     } else {
-                        minutesFichadosMes += calcularMinutosDeUnDia(fechaStr);
+                        minutosFichadosMes += calcularMinutosDeUnDia(fechaStr);
                     }
+                } 
+                // Si el día está completamente vacío pero es de lunes a viernes y el MES está activo (Junio/Mayo), computamos el teórico
+                else if (minsTeoricosDia > 0 && (mIdx === 4 || mIdx === 5)) {
+                    minutosTeoricosMesCalculados += minsTeoricosDia;
                 }
             }
 
-            let saldoMesMins = minutesFichadosMes - totalMinutosTeoricos;
-            saldoGlobalMins += saldoMesMins;
+            // Si el mes no tiene absolutamente ninguna actividad registrada (meses vacíos del pasado), su saldo es 0
+            let saldoMesMins = 0;
+            if (mesTieneActividad || mIdx === 4 || mIdx === 5) {
+                saldoMesMins = minutosFichadosMes - minutosTeoricosMesCalculados;
+                saldoGlobalMins += saldoMesMins;
+            }
 
-            const tr = document.createElement('tr');
-            const colorSaldo = saldoMesMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
-            tr.innerHTML = `
-                <td>${mesesNombres[mIdx]} ${año}</td>
-                <td class="col-right">${tabularMinsStr(minutesFichadosMes)}</td>
-                <td class="col-right">${tabularMinsStr(totalMinutosTeoricos)}</td>
-                <td class="col-right" style="color: ${colorSaldo}; font-weight:600;">${tabularMinsStr(saldoMesMins)}</td>
-            `;
-            tBody.appendChild(tr);
+            // Dibujamos solo los meses que tengan registros o que sean Mayo/Junio
+            if (mesTieneActividad || mIdx === 4 || mIdx === 5) {
+                const tr = document.createElement('tr');
+                const colorSaldo = saldoMesMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                tr.innerHTML = `
+                    <td>${mesesNombres[mIdx]} ${año}</td>
+                    <td class="col-right">${tabularMinsStr(minutosFichadosMes)}</td>
+                    <td class="col-right">${tabularMinsStr(minutosTeoricosMesCalculados)}</td>
+                    <td class="col-right" style="color: ${colorSaldo}; font-weight:600;">${tabularMinsStr(saldoMesMins)}</td>
+                `;
+                tBody.appendChild(tr);
+            }
         }
 
         const globalDiv = document.getElementById('saldoGlobalTotal');
@@ -645,7 +666,6 @@
         document.getElementById('txtBackup').placeholder = 'Pega el texto JSON aquí...';
     }
 
-    // FUNCIÓN BLINDADA Y CORREGIDA AQUÍ
     function procesarAccionBackup() {
         const txt = document.getElementById('txtBackup').value.trim();
         
