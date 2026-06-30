@@ -509,14 +509,14 @@
         return { totalMinutosTeoricos, diasMapeados };
     }
 
-    // NUEVO MOTOR DE CÁLCULO INTELIGENTE RETROACTIVO DESDE ENERO
+    // MOTOR EXACTO DE AYER: Cuenta solo el saldo de los días rellenados desde Enero
     function dibujarTablaYCalcularGlobal() {
         const tBody = document.getElementById('cuerpoTablaMeses');
         tBody.innerHTML = '';
         
         let saldoGlobalMins = 0;
         
-        // Recorremos dinámicamente desde Enero (0) hasta el mes activo en tu pantalla
+        // Recorremos desde Enero hasta el mes activo
         for (let mIdx = 0; mIdx <= historialMesActivo; mIdx++) {
             const año = historialAñoActivo;
             const { diasMapeados } = obtenerDiasLaborablesYTeoricosMes(año, mIdx);
@@ -529,32 +529,30 @@
                 const reg = baseDatos[fechaStr];
                 const minsTeoricosDia = diasMapeados[fechaStr];
 
-                // Si el día tiene fichajes, o es fin de semana con horas, o está marcado como Libre
-                if (reg && (reg.incidencia || (reg.tramos && reg.tramos.length > 0) || reg.coche)) {
+                // REGLA CLAVE DE AYER: Solo cuenta el teórico si el día TIENE datos guardados
+                if (reg && ((reg.tramos && reg.tramos.length > 0) || reg.incidencia || reg.coche)) {
                     mesTieneActividad = true;
-                    minutosTeoricosMesCalculados += minsTeoricosDia; // Sumamos su teórico real
-
-                    if (reg.incidencia) {
-                        minutosFichadosMes += minsTeoricosDia; // Día especial computa al 100%
-                    } else {
+                    
+                    // Si el día NO es especial, se le suma su teórico
+                    if (!reg.incidencia) {
+                        minutosTeoricosMesCalculados += minsTeoricosDia;
                         minutosFichadosMes += calcularMinutosDeUnDia(fechaStr);
+                    } else {
+                        // Si es especial (Vacaciones/Asuntos Propios), ni suma ni resta saldo
+                        minutosTeoricosMesCalculados += 0;
+                        minutosFichadosMes += 0;
                     }
-                } 
-                // Si el día está completamente vacío pero es de lunes a viernes y el MES está activo (Junio/Mayo), computamos el teórico
-                else if (minsTeoricosDia > 0 && (mIdx === 4 || mIdx === 5)) {
-                    minutosTeoricosMesCalculados += minsTeoricosDia;
                 }
             }
 
-            // Si el mes no tiene absolutamente ninguna actividad registrada (meses vacíos del pasado), su saldo es 0
-            let saldoMesMins = 0;
-            if (mesTieneActividad || mIdx === 4 || mIdx === 5) {
-                saldoMesMins = minutosFichadosMes - minutosTeoricosMesCalculados;
+            let saldoMesMins = minutosFichadosMes - minutosTeoricosMesCalculados;
+            
+            // Solo sumamos el mes a la bolsa global de arriba si ha tenido actividad real
+            if (mesTieneActividad || mIdx === 5) {
                 saldoGlobalMins += saldoMesMins;
             }
 
-            // Dibujamos solo los meses que tengan registros o que sean Mayo/Junio
-            if (mesTieneActividad || mIdx === 4 || mIdx === 5) {
+            if (mesTieneActividad || mIdx === 5) {
                 const tr = document.createElement('tr');
                 const colorSaldo = saldoMesMins >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
                 tr.innerHTML = `
@@ -601,7 +599,6 @@
                 }
                 if (reg.incidencia) {
                     esEspecial = true;
-                    minsFichados = minsTeoricos; 
                 } else {
                     minsFichados = calcularMinutosDeUnDia(ISOStr);
                 }
