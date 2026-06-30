@@ -94,11 +94,6 @@
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
         .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
 
-        .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
-        .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
-        .nav-btn:active { background: #3a3a3c; }
-
         .diario-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .diario-table th { text-align: right; color: #8e8e93; font-weight: 600; padding-bottom: 6px; border-bottom: 0.5px solid var(--border-color); }
         .diario-table th:first-child, .diario-table td:first-child { text-align: left; }
@@ -471,32 +466,33 @@
         const fecha = new Date(yyyy, mm - 1, dd);
         const diaSemana = fecha.getDay();
         
-        // Fines de semana no tienen jornada teórica
+        // Fines de semana no restan jornada teórica
         if (diaSemana === 0 || diaSemana === 6) return 0;
         
         const objSemanal = obtenerObjetivoSemanal(fechaStr);
-        // Si el objetivo es 28h -> 5h 36m al día (336 minutos). Si es 35h -> 7h al día (420 minutos).
+        // De Enero a Mayo: 5h 36m (336 minutos). Junio en adelante: 7h (420 minutos).
         return (objSemanal === 28) ? 336 : 420;
     }
 
-    // EL MOTOR ORIGINAL RECUPERADO: Suma día a día solo los saldos reales desde Enero
+    // MOTOR DE CÁLCULO ESTRICTO RECONSTRUIDO
     function dibujarTablaYCalcularGlobal() {
         let saldoGlobalMins = 0;
 
-        // Sumamos única y exclusivamente el saldo de los días reales que existen en la base de datos
+        // Sumamos día a día los saldos de la base de datos completa desde Enero
         for (const fechaStr in baseDatos) {
             const reg = baseDatos[fechaStr];
             if (!reg) continue;
 
-            // Filtramos tramos vacíos por compatibilidad de arrays antiguos
             let tieneFichajes = (reg.tramos && reg.tramos.length > 0);
             let esIncidencia = reg.incidencia;
+            let tieneCoche = reg.coche;
 
-            if (tieneFichajes || esIncidencia) {
+            // REGLA CLAVE DE INTERSECCIÓN: Un día sin registrar NO resta horas teóricas (es fiesta, puente, etc.)
+            if (tieneFichajes || esIncidencia || tieneCoche) {
                 let teoricoDia = obtenerTeoricoPorDiaISO(fechaStr);
                 
                 if (esIncidencia) {
-                    // Días especiales/vacaciones ni suman ni restan saldo (saldo 0)
+                    // Días especiales/vacaciones fijan el saldo neto diario a 0 (ni quitan ni ponen)
                     saldoGlobalMins += 0;
                 } else {
                     let fichadoDia = calcularMinutosDeUnDia(fechaStr);
