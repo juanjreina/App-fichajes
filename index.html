@@ -370,22 +370,22 @@
     }
 
     function calcularMinutosDia(fechaStr) {
-        const obj = baseDatos[fechaStr];
-        if (!obj || !obj.tramos) return 0;
-        let total = 0;
-        obj.tramos.forEach(tr => {
-            if (tr.entrada && tr.salida) {
-                const diff = minDeTime(tr.salida) - minDeTime(tr.entrada);
-                if (diff > 0) total += diff;
-            }
-        });
-        return total;
+    const obj = baseDatos[fechaStr];
+    
+    // BLINDAJE: Si el día es vacaciones o libre, RETORNA 0 MINUTOS SIEMPRE
+    if (!obj || !obj.tramos || obj.incidencia === 'vacaciones' || obj.incidencia === 'libre') {
+        return 0;
     }
-
-    function esLaborable(d) {
-        const day = d.getDay();
-        return day !== 0 && day !== 6;
-    }
+    
+    let total = 0;
+    obj.tramos.forEach(tr => {
+        if (tr.entrada && tr.salida) {
+            const diff = minDeTime(tr.salida) - minDeTime(tr.entrada);
+            if (diff > 0) total += diff;
+        }
+    });
+    return total;
+}
 
     function getTeoricoDia(fechaStr) {
         const d = new Date(fechaStr + 'T00:00:00');
