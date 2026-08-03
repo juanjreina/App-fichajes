@@ -244,11 +244,11 @@
         <button class="btn-backup" onclick="mostrarImportar()">📤 Importar Copia</button>
     </div>
 
-    <div class="panel-backup" id="panelBackup">
-        <span class="section-title" id="backupTitle">Copia de Seguridad</span>
-        <textarea id="txtBackup"></textarea>
-        <button class="btn-add" id="btnAccionBackup" style="margin-top:10px;">Listo</button>
-    </div>
+<div class="backup-zone">
+    <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
+    <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
+    <button class="btn-backup" style="color: var(--danger); border-color: rgba(255, 69, 58, 0.3);" onclick="borrarTodoElHistorial()">🗑️ Borrar Datos</button>
+</div>
 </div>
 
 <script>
@@ -633,6 +633,14 @@
             }
         };
     }
+    function borrarTodoElHistorial() {
+    if (confirm('¿Estás seguro de que quieres borrar todos los datos guardados en el navegador?')) {
+        localStorage.removeItem('registro_calendario_v3');
+        baseDatos = {};
+        initApp();
+        alert('¡Historial borrado completamente!');
+    }
+}
 
     window.onload = initApp;
 </script>
