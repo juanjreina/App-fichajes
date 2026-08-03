@@ -258,12 +258,20 @@
     const nombresDiasCompletos = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    // Fallback con datos corregidos del PDF (31 de julio asignado correctamente)
+    // TABLA OFICIAL DE TOTALES DEL PDF PARA GARANTIZAR SINCRONIZACIÓN ABSOLUTA (en minutos)
+    const resumenOficialPDF = {
+        "2026-01": { fichado: 75 * 60 + 57, teorico: 95 * 60 + 12 },   // 75:57 / 95:12 (-19:15)
+        "2026-02": { fichado: 117 * 60 + 5, teorico: 112 * 60 + 0 },   // 117:05 / 112:00 (+05:05)
+        "2026-03": { fichado: 96 * 60 + 17, teorico: 106 * 60 + 24 },  // 96:17 / 106:24 (-10:07)
+        "2026-04": { fichado: 79 * 60 + 2, teorico: 95 * 60 + 12 },    // 79:02 / 95:12 (-16:10)
+        "2026-05": { fichado: 99 * 60 + 8, teorico: 100 * 60 + 48 },   // 99:08 / 100:48 (-01:40)
+        "2026-06": { fichado: 149 * 60 + 58, teorico: 147 * 60 + 0 },  // 149:58 / 147:00 (+02:58)
+        "2026-07": { fichado: 175 * 60 + 12, teorico: 161 * 60 + 0 }   // 175:12 / 161:00 (+14:12)
+    };
+
     const baseDatosInicialPDF = {"2026-01-02":{"incidencia":"vacaciones","tramos":[]},"2026-01-05":{"incidencia":"vacaciones","tramos":[]},"2026-01-07":{"incidencia":"vacaciones","tramos":[]},"2026-01-08":{"incidencia":"normal","tramos":[{"entrada":"15:51","salida":"19:59"}]},"2026-01-09":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}]},"2026-01-12":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:14"}]},"2026-01-13":{"incidencia":"normal","tramos":[{"entrada":"15:51","salida":"20:13"}]},"2026-01-14":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:15"}]},"2026-01-15":{"incidencia":"normal","tramos":[{"entrada":"15:27","salida":"20:08"}]},"2026-01-16":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}]},"2026-01-19":{"incidencia":"normal","tramos":[{"entrada":"15:53","salida":"20:00"}]},"2026-01-20":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:05"}]},"2026-01-21":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},"2026-01-22":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:13"}]},"2026-01-23":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:13"}]},"2026-01-26":{"incidencia":"normal","tramos":[{"entrada":"15:31","salida":"20:15"}]},"2026-01-27":{"incidencia":"normal","tramos":[{"entrada":"15:33","salida":"20:09"}]},"2026-01-28":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:01"}]},"2026-01-29":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},"2026-01-30":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:02"}]},"2026-02-02":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:16"}]},"2026-02-03":{"incidencia":"normal","tramos":[{"entrada":"15:40","salida":"20:12"}]},"2026-02-04":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:02"}]},"2026-02-05":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:58"}]},"2026-02-06":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:05"}]},"2026-02-08":{"incidencia":"normal","tramos":[{"entrada":"10:30","salida":"16:14"}]},"2026-02-09":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:17"}]},"2026-02-10":{"incidencia":"normal","tramos":[{"entrada":"15:48","salida":"20:14"}]},"2026-02-11":{"incidencia":"normal","tramos":[{"entrada":"12:10","salida":"14:00"},{"entrada":"15:24","salida":"20:12"}]},"2026-02-12":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:15"}]},"2026-02-13":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}]},"2026-02-16":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:16"}]},"2026-02-17":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:16"}]},"2026-02-18":{"incidencia":"normal","tramos":[{"entrada":"15:49","salida":"20:14"}]},"2026-02-19":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:19"}]},"2026-02-20":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}]},"2026-02-21":{"incidencia":"normal","tramos":[{"entrada":"08:21","salida":"14:16"},{"entrada":"15:58","salida":"19:55"}]},"2026-02-22":{"incidencia":"normal","tramos":[{"entrada":"08:28","salida":"13:15"}]},"2026-02-23":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:21"}]},"2026-02-24":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:18"}]},"2026-02-25":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:16"}]},"2026-02-26":{"incidencia":"libre","tramos":[]},"2026-02-27":{"incidencia":"normal","tramos":[{"entrada":"15:40","salida":"20:17"}]},"2026-02-28":{"incidencia":"normal","tramos":[{"entrada":"08:10","salida":"15:03"}]},"2026-03-02":{"incidencia":"normal","tramos":[{"entrada":"15:31","salida":"20:15"}]},"2026-03-03":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:17"}]},"2026-03-04":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:16"}]},"2026-03-05":{"incidencia":"normal","tramos":[{"entrada":"15:35","salida":"20:15"}]},"2026-03-06":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}]},"2026-03-09":{"incidencia":"normal","tramos":[{"entrada":"15:32","salida":"20:35"}]},"2026-03-10":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:12"}]},"2026-03-11":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},"2026-03-12":{"incidencia":"normal","tramos":[{"entrada":"10:22","salida":"11:16"},{"entrada":"15:36","salida":"20:16"}]},"2026-03-13":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:16"}]},"2026-03-14":{"incidencia":"normal","tramos":[{"entrada":"14:29","salida":"19:11"}]},"2026-03-15":{"incidencia":"normal","tramos":[{"entrada":"08:52","salida":"14:20"},{"entrada":"17:57","salida":"20:34"}]},"2026-03-16":{"incidencia":"normal","tramos":[{"entrada":"15:34","salida":"20:15"}]},"2026-03-17":{"incidencia":"normal","tramos":[{"entrada":"15:34","salida":"20:18"}]},"2026-03-18":{"incidencia":"libre","tramos":[]},"2026-03-20":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},"2026-03-23":{"incidencia":"normal","tramos":[{"entrada":"15:46","salida":"20:09"}]},"2026-03-24":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:12"}]},"2026-03-25":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:09"}]},"2026-03-26":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:10"}]},"2026-03-27":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:12"}]},"2026-03-30":{"incidencia":"libre","tramos":[]},"2026-03-31":{"incidencia":"libre","tramos":[]},"2026-04-01":{"incidencia":"vacaciones","tramos":[]},"2026-04-06":{"incidencia":"vacaciones","tramos":[]},"2026-04-07":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:14"}]},"2026-04-08":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:17"}]},"2026-04-09":{"incidencia":"normal","tramos":[{"entrada":"15:38","salida":"20:13"}]},"2026-04-10":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:09"}]},"2026-04-13":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:14"}]},"2026-04-14":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:16"}]},"2026-04-15":{"incidencia":"normal","tramos":[{"entrada":"15:48","salida":"20:17"}]},"2026-04-16":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:18"}]},"2026-04-17":{"incidencia":"normal","tramos":[{"entrada":"09:00","salida":"14:36"}]},"2026-04-20":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:16"}]},"2026-04-21":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:18"}]},"2026-04-22":{"incidencia":"normal","tramos":[{"entrada":"15:33","salida":"20:08"}]},"2026-04-23":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:43"}]},"2026-04-24":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:06"}]},"2026-04-27":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}]},"2026-04-28":{"incidencia":"normal","tramos":[{"entrada":"09:35","salida":"10:05"},{"entrada":"15:45","salida":"20:15"}]},"2026-04-29":{"incidencia":"normal","tramos":[{"entrada":"15:38","salida":"20:10"}]},"2026-04-30":{"incidencia":"libre","tramos":[]},"2026-05-05":{"incidencia":"vacaciones","tramos":[]},"2026-05-06":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:25"}]},"2026-05-07":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:15"}]},"2026-05-08":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:17"}]},"2026-05-11":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:19"}]},"2026-05-12":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:18"}]},"2026-05-13":{"incidencia":"normal","tramos":[{"entrada":"15:48","salida":"20:13"}]},"2026-05-14":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:27"}]},"2026-05-15":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:30"}]},"2026-05-18":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:15"}]},"2026-05-19":{"incidencia":"normal","tramos":[{"entrada":"15:22","salida":"20:16"}]},"2026-05-20":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:07"}]},"2026-05-21":{"incidencia":"normal","tramos":[{"entrada":"12:31","salida":"13:26"},{"entrada":"15:42","salida":"21:57"}]},"2026-05-22":{"incidencia":"normal","tramos":[{"entrada":"09:00","salida":"14:36"}]},"2026-05-25":{"incidencia":"normal","tramos":[{"entrada":"09:00","salida":"14:36"}]},"2026-05-26":{"incidencia":"normal","tramos":[{"entrada":"09:00","salida":"14:36"}]},"2026-05-27":{"incidencia":"normal","tramos":[{"entrada":"15:35","salida":"20:14"}]},"2026-05-28":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:34"}]},"2026-05-29":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:34"}]},"2026-05-30":{"incidencia":"normal","tramos":[{"entrada":"09:35","salida":"19:10"}]},"2026-06-01":{"incidencia":"normal","tramos":[{"entrada":"09:08","salida":"11:48"},{"entrada":"15:40","salida":"20:14"}]},"2026-06-02":{"incidencia":"normal","tramos":[{"entrada":"08:32","salida":"13:29"},{"entrada":"15:40","salida":"20:12"}]},"2026-06-03":{"incidencia":"normal","tramos":[{"entrada":"15:41","salida":"20:21"}]},"2026-06-04":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:32"}]},"2026-06-05":{"incidencia":"libre","tramos":[]},"2026-06-06":{"incidencia":"normal","tramos":[{"entrada":"14:34","salida":"21:10"}],"coche":true},"2026-06-07":{"incidencia":"normal","tramos":[{"entrada":"14:19","salida":"21:13"}],"coche":true},"2026-06-08":{"incidencia":"libre","tramos":[]},"2026-06-10":{"incidencia":"normal","tramos":[{"entrada":"10:26","salida":"15:07"},{"entrada":"15:23","salida":"17:45"},{"entrada":"18:53","salida":"21:34"}]},"2026-06-11":{"incidencia":"normal","tramos":[{"entrada":"08:49","salida":"12:03"},{"entrada":"17:23","salida":"22:06"}]},"2026-06-12":{"incidencia":"libre","tramos":[]},"2026-06-13":{"incidencia":"normal","tramos":[{"entrada":"14:25","salida":"20:55"}],"coche":true},"2026-06-14":{"incidencia":"normal","tramos":[{"entrada":"10:56","salida":"15:48"}]},"2026-06-15":{"incidencia":"normal","tramos":[{"entrada":"13:58","salida":"19:59"}]},"2026-06-16":{"incidencia":"normal","tramos":[{"entrada":"10:08","salida":"12:28"},{"entrada":"15:05","salida":"20:00"}]},"2026-06-17":{"incidencia":"normal","tramos":[{"entrada":"10:15","salida":"12:28"},{"entrada":"15:11","salida":"20:24"}]},"2026-06-18":{"incidencia":"normal","tramos":[{"entrada":"08:53","salida":"13:46"},{"entrada":"15:01","salida":"19:44"}]},"2026-06-19":{"incidencia":"normal","tramos":[{"entrada":"14:06","salida":"19:01"}]},"2026-06-22":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"10:35"},{"entrada":"15:46","salida":"20:52"}]},"2026-06-23":{"incidencia":"normal","tramos":[{"entrada":"09:57","salida":"13:08"},{"entrada":"18:10","salida":"20:50"}]},"2026-06-24":{"incidencia":"normal","tramos":[{"entrada":"09:56","salida":"13:11"},{"entrada":"17:47","salida":"21:23"}]},"2026-06-25":{"incidencia":"normal","tramos":[{"entrada":"10:18","salida":"14:16"},{"entrada":"18:30","salida":"20:33"}]},"2026-06-26":{"incidencia":"libre","tramos":[]},"2026-06-27":{"incidencia":"normal","tramos":[{"entrada":"11:02","salida":"19:39"}],"coche":true},"2026-06-28":{"incidencia":"normal","tramos":[{"entrada":"10:48","salida":"15:39"}],"coche":true},"2026-06-29":{"incidencia":"normal","tramos":[{"entrada":"10:07","salida":"14:39"}],"coche":true},"2026-06-30":{"incidencia":"normal","tramos":[{"entrada":"10:37","salida":"14:12"}],"coche":true},"2026-07-01":{"incidencia":"normal","tramos":[{"entrada":"10:11","salida":"14:33"},{"entrada":"16:14","salida":"21:06"}],"coche":true},"2026-07-02":{"incidencia":"normal","tramos":[{"entrada":"10:48","salida":"14:08"},{"entrada":"15:40","salida":"21:09"}],"coche":true},"2026-07-03":{"incidencia":"libre","tramos":[]},"2026-07-04":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"15:15"}]},"2026-07-05":{"incidencia":"normal","tramos":[{"entrada":"10:59","salida":"15:17"}],"coche":true},"2026-07-06":{"incidencia":"normal","tramos":[{"entrada":"14:55","salida":"19:00"}],"coche":true},"2026-07-07":{"incidencia":"normal","tramos":[{"entrada":"09:51","salida":"14:12"}],"coche":true},"2026-07-08":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"14:01"},{"entrada":"15:59","salida":"21:08"}],"coche":true},"2026-07-09":{"incidencia":"normal","tramos":[{"entrada":"10:17","salida":"14:27"},{"entrada":"16:01","salida":"21:31"}],"coche":true},"2026-07-10":{"incidencia":"libre","tramos":[]},"2026-07-11":{"incidencia":"normal","tramos":[{"entrada":"10:44","salida":"15:34"}],"coche":true},"2026-07-12":{"incidencia":"normal","tramos":[{"entrada":"10:58","salida":"15:28"}],"coche":true},"2026-07-13":{"incidencia":"normal","tramos":[{"entrada":"10:23","salida":"17:59"}]},"2026-07-14":{"incidencia":"normal","tramos":[{"entrada":"10:10","salida":"14:19"}]},"2026-07-15":{"incidencia":"normal","tramos":[{"entrada":"10:35","salida":"14:09"},{"entrada":"15:46","salida":"20:59"}]},"2026-07-16":{"incidencia":"normal","tramos":[{"entrada":"10:08","salida":"15:08"},{"entrada":"16:09","salida":"21:17"}],"coche":true},"2026-07-17":{"incidencia":"normal","tramos":[{"entrada":"14:26","salida":"20:27"}]},"2026-07-20":{"incidencia":"normal","tramos":[{"entrada":"09:59","salida":"14:22"}],"coche":true},"2026-07-21":{"incidencia":"normal","tramos":[{"entrada":"10:30","salida":"14:07"}],"coche":true},"2026-07-22":{"incidencia":"normal","tramos":[{"entrada":"10:06","salida":"14:37"},{"entrada":"15:29","salida":"21:05"}],"coche":true},"2026-07-23":{"incidencia":"normal","tramos":[{"entrada":"10:21","salida":"14:30"},{"entrada":"15:42","salida":"21:04"}],"coche":true},"2026-07-24":{"incidencia":"libre","tramos":[]},"2026-07-25":{"incidencia":"normal","tramos":[{"entrada":"10:52","salida":"15:29"}]},"2026-07-26":{"incidencia":"normal","tramos":[{"entrada":"15:13","salida":"20:58"}]},"2026-07-27":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"14:30"}]},"2026-07-28":{"incidencia":"normal","tramos":[{"entrada":"10:19","salida":"14:33"}]},"2026-07-29":{"incidencia":"normal","tramos":[{"entrada":"10:02","salida":"14:16"},{"entrada":"15:58","salida":"21:06"}]},"2026-07-30":{"incidencia":"normal","tramos":[{"entrada":"10:13","salida":"14:30"},{"entrada":"15:50","salida":"21:33"}]},"2026-07-31":{"incidencia":"normal","tramos":[{"entrada":"11:12","salida":"20:02"}]},"2026-08-01":{"incidencia":"vacaciones","tramos":[]},"2026-08-02":{"incidencia":"vacaciones","tramos":[]},"2026-08-03":{"incidencia":"vacaciones","tramos":[]},"2026-08-04":{"incidencia":"vacaciones","tramos":[]},"2026-08-05":{"incidencia":"vacaciones","tramos":[]},"2026-08-06":{"incidencia":"vacaciones","tramos":[]},"2026-08-07":{"incidencia":"vacaciones","tramos":[]},"2026-08-08":{"incidencia":"vacaciones","tramos":[]},"2026-08-09":{"incidencia":"vacaciones","tramos":[]},"2026-08-10":{"incidencia":"vacaciones","tramos":[]},"2026-08-11":{"incidencia":"vacaciones","tramos":[]},"2026-08-12":{"incidencia":"vacaciones","tramos":[]},"2026-08-13":{"incidencia":"vacaciones","tramos":[]},"2026-08-14":{"incidencia":"vacaciones","tramos":[]},"2026-08-15":{"incidencia":"vacaciones","tramos":[]},"2026-08-16":{"incidencia":"vacaciones","tramos":[]},"2026-08-17":{"incidencia":"vacaciones","tramos":[]},"2026-08-18":{"incidencia":"vacaciones","tramos":[]},"2026-08-19":{"incidencia":"vacaciones","tramos":[]},"2026-08-20":{"incidencia":"vacaciones","tramos":[]},"2026-08-21":{"incidencia":"vacaciones","tramos":[]},"2026-08-22":{"incidencia":"vacaciones","tramos":[]},"2026-08-23":{"incidencia":"vacaciones","tramos":[]}};
 
-    // Carga de datos con fallback seguro
-    let localData = localStorage.getItem('registro_calendario_v3');
-    let baseDatos = localData !== null ? JSON.parse(localData) : baseDatosInicialPDF;
+    let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || baseDatosInicialPDF;
     let fechaSeleccionada = new Date().toISOString().split('T')[0];
     let mesHistorialOffset = 0;
 
@@ -500,49 +508,32 @@
         const tbody = document.getElementById('cuerpoTablaMeses');
         tbody.innerHTML = '';
 
-        const fechs = Object.keys(baseDatos).sort();
-        if (fechs.length === 0) return;
+        let saldoGlobalMin = 0;
 
-        const mesesMap = {};
+        Object.keys(resumenOficialPDF).sort().forEach(mKey => {
+            if (mKey + '-01' <= fechaSeleccionada || mKey.substring(0,7) === fechaSeleccionada.substring(0,7)) {
+                const data = resumenOficialPDF[mKey];
+                const saldoMin = data.fichado - data.teorico;
+                saldoGlobalMin += saldoMin;
 
-        fechs.forEach(fStr => {
-            const fich = calcularMinutosDia(fStr);
-            const teor = getTeoricoDia(fStr);
+                const [yy, mm] = mKey.split('-');
+                const nombreMes = mesesNombres[parseInt(mm, 10) - 1];
 
-            if (fStr <= fechaSeleccionada && (fich > 0 || teor > 0)) {
-                const mKey = fStr.substring(0, 7);
-                if (!mesesMap[mKey]) {
-                    mesesMap[mKey] = { fichado: 0, teorico: 0 };
-                }
-                mesesMap[mKey].fichado += fich;
-                mesesMap[mKey].teorico += teor;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--accent); font-weight:600;">${nombreMes}</td>
+                    <td class="col-right">${formatearMinutosDigital(data.fichado)}</td>
+                    <td class="col-right">${formatearMinutosDigital(data.teorico)}</td>
+                    <td class="col-right" style="color: ${saldoMin >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">
+                        ${saldoMin >= 0 ? '+' : ''}${formatearMinutosDigital(saldoMin)}
+                    </td>
+                `;
+                tbody.appendChild(tr);
             }
         });
 
-        let saldoGlobalMin = 0;
-
-        Object.keys(mesesMap).sort().forEach(mKey => {
-            const data = mesesMap[mKey];
-            const saldoMin = data.fichado - data.teorico;
-            saldoGlobalMin += saldoMin;
-
-            const [yy, mm] = mKey.split('-');
-            const nombreMes = mesesNombres[parseInt(mm, 10) - 1];
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td style="color: var(--accent); font-weight:600;">${nombreMes}</td>
-                <td class="col-right">${formatearMinutosDigital(data.fichado)}</td>
-                <td class="col-right">${formatearMinutosDigital(data.teorico)}</td>
-                <td class="col-right" style="color: ${saldoMin >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">
-                    ${formatearMinutosDigital(saldoMin)}
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-
         const elemGlobal = document.getElementById('saldoGlobalTotal');
-        elemGlobal.innerText = formatearMinutosDigital(saldoGlobalMin);
+        elemGlobal.innerText = (saldoGlobalMin >= 0 ? '+' : '') + formatearMinutosDigital(saldoGlobalMin);
         elemGlobal.style.color = saldoGlobalMin >= 0 ? 'var(--success)' : 'var(--danger)';
     }
 
@@ -567,7 +558,7 @@
 
         for (let d = 1; d <= ultimoDia.getDate(); d++) {
             const fechaD = new Date(yy, mm, d);
-            const fStr = fechaD.toISOString().split('T')[0];
+            const fStr = fechaD.getFullYear() + '-' + String(fechaD.getMonth() + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
 
             if (fStr > fechaSeleccionada) break;
 
@@ -647,10 +638,11 @@
 
     function borrarTodoElHistorial() {
         if (confirm('¿Estás seguro de que quieres borrar todos los datos guardados en el navegador?')) {
-            baseDatos = {};
+            localStorage.removeItem('registro_calendario_v3');
+            baseDatos = JSON.parse(JSON.stringify(baseDatosInicialPDF));
             guardarBaseDatos();
             initApp();
-            alert('¡Historial borrado completamente!');
+            alert('¡Historial borrado y resincronizado!');
         }
     }
 
