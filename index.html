@@ -4,10 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Control de Jornada Pro</title>
+    
+    <!-- Configuración para PWA Independiente (Standalone) -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#090a0f">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
-    
+
+    <!-- Web App Manifest Embebido -->
+    <link rel="manifest" href='data:application/json,{"name":"Control de Jornada Pro","short_name":"JornadaPro","start_url":".","display":"standalone","background_color":"#090a0f","theme_color":"#090a0f","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/5988/5988246.png","sizes":"512x512","type":"image/png"}]}'>
+
     <style>
         :root {
             --bg-color: #090a0f;
@@ -254,11 +261,18 @@
 </div>
 
 <script>
+    // Registro de Service Worker para habilitar instalación PWA
+    if ('serviceWorker' in navigator) {
+        const swCode = `self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
+        const blob = new Blob([swCode], { type: 'text/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+    }
+
     const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const nombresDiasCompletos = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
-    // TABLA OFICIAL DE TOTALES DEL PDF PARA GARANTIZAR SINCRONIZACIÓN ABSOLUTA (en minutos)
+    // TABLA OFICIAL DE TOTALES DEL PDF
     const resumenOficialPDF = {
         "2026-01": { fichado: 75 * 60 + 57, teorico: 95 * 60 + 12 },   // 75:57 / 95:12 (-19:15)
         "2026-02": { fichado: 117 * 60 + 5, teorico: 112 * 60 + 0 },   // 117:05 / 112:00 (+05:05)
@@ -637,12 +651,12 @@
     }
 
     function borrarTodoElHistorial() {
-        if (confirm('¿Estás seguro de que quieres borrar todos los datos guardados en el navegador?')) {
+        if (confirm('¿Estás seguro de que quieres borrar todos los datos guardados en el navegador y restaurar las cifras del PDF?')) {
             localStorage.removeItem('registro_calendario_v3');
             baseDatos = JSON.parse(JSON.stringify(baseDatosInicialPDF));
             guardarBaseDatos();
             initApp();
-            alert('¡Historial borrado y resincronizado!');
+            alert('¡Historial resincronizado correctamente!');
         }
     }
 
