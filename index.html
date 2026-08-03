@@ -385,25 +385,27 @@
         return day !== 0 && day !== 6;
     }
 
-    function getTeoricoDia(fechaStr) {
-        const d = new Date(fechaStr + 'T00:00:00');
-        const obj = baseDatos[fechaStr];
+function getTeoricoDia(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00');
+    const obj = baseDatos[fechaStr];
 
-        if (obj && (obj.incidencia === 'libre' || obj.incidencia === 'vacaciones')) {
-            return 0;
-        }
-
-        if (!esLaborable(d)) {
-            return 0;
-        }
-
-        const mes = d.getMonth();
-        if (mes >= 5 && mes <= 8) {
-            return 7 * 60;
-        } else {
-            return 5 * 60 + 36;
-        }
+    // Si es libre o vacaciones, el teórico es 0
+    if (obj && (obj.incidencia === 'libre' || obj.incidencia === 'vacaciones')) {
+        return 0;
     }
+
+    // Fines de semana teórico 0
+    if (!esLaborable(d)) {
+        return 0;
+    }
+
+    const mes = d.getMonth();
+    if (mes >= 5 && mes <= 8) {
+        return 7 * 60; // Verano (Junio-Septiembre)
+    } else {
+        return 5 * 60 + 36; // Invierno (Resto del año)
+    }
+}
 
     function formatearMinutos(m) {
         const signo = m < 0 ? '-' : '';
