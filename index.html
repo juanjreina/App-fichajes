@@ -6,166 +6,204 @@
     <title>Control de Jornada Pro</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
     
     <style>
         :root {
-            --bg-color: #000000;
-            --card-bg: #1c1c1e;
-            --text-color: #f2f2f7;
-            --accent-color: #0a84ff;
-            --success-color: #30d158;
-            --danger-color: #ff453a;
-            --warning-color: #ff9f0a;
-            --border-color: #38383a;
-            --detail-bg: #121212;
+            --bg-color: #090a0f;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f5f5f7;
+            --text-muted: #8e8e93;
+            --accent: #0a84ff;
+            --accent-glow: rgba(10, 132, 255, 0.25);
+            --success: #30d158;
+            --danger: #ff453a;
+            --warning: #ff9f0a;
+            --radius-lg: 16px;
+            --radius-md: 10px;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             margin: 0; padding: 0;
             display: flex; flex-direction: column; align-items: center;
-            -webkit-tap-highlight-color: transparent; user-select: none;
+            user-select: none;
+            padding-bottom: 40px;
         }
 
         .app-header {
-            width: 100%; padding-top: calc(15px + env(safe-area-inset-top)); padding-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;
-            background-color: #121212; border-bottom: 0.5px solid var(--border-color);
-            position: sticky; top: 0; z-index: 10; padding-left: 16px; padding-right: 16px;
+            width: 100%; padding: calc(16px + env(safe-area-inset-top)) 20px 16px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: rgba(9, 10, 15, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--card-border);
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .header-title { font-size: 1.1rem; font-weight: 600; }
+        .header-title { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; }
         
         .sync-status {
-            font-size: 0.8rem; color: var(--success-color); font-weight: 500;
-            background: #1c2e24; border: 0.5px solid #30d158; padding: 4px 10px; border-radius: 12px;
+            font-size: 0.75rem; color: var(--success); font-weight: 600;
+            background: rgba(48, 209, 88, 0.12); border: 1px solid rgba(48, 209, 88, 0.3);
+            padding: 4px 12px; border-radius: 20px;
         }
 
-        .container { width: 100%; max-width: 450px; box-sizing: border-box; padding: 16px; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-        .card-global { background: linear-gradient(145deg, #1c1c1e, #2c2c2e); border: 1px solid var(--accent-color); text-align: center; }
-        .date-picker-container { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .container { width: 100%; max-width: 480px; padding: 16px; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 18px; margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-global {
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.12), rgba(28, 28, 30, 0.6));
+            border: 1px solid rgba(10, 132, 255, 0.3);
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px;
+            color: var(--text-muted); margin-bottom: 12px; font-weight: 700;
+        }
+
+        /* Quick Action Punch Buttons */
+        .quick-punch-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
+        }
+        .btn-punch {
+            background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
+            color: var(--text-main); border-radius: var(--radius-md); padding: 10px 6px;
+            font-size: 0.78rem; font-weight: 600; cursor: pointer; text-align: center;
+            transition: all 0.2s ease;
+        }
+        .btn-punch:active { transform: scale(0.96); background: rgba(255, 255, 255, 0.15); }
+
+        .date-picker-container { display: flex; gap: 10px; }
         
         input[type="date"] {
-            background: #2c2c2e; border: none; color: #fff; padding: 12px;
-            border-radius: 10px; font-size: 1rem; flex: 1; text-align: center; font-family: inherit;
+            background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
+            color: #fff; padding: 12px; border-radius: var(--radius-md);
+            font-size: 1rem; width: 100%; text-align: center; font-family: inherit; outline: none;
         }
 
-        .progress-container { margin: 12px 0 4px 0; background: #2c2c2e; border-radius: 10px; overflow: hidden; height: 24px; position: relative; }
-        .progress-bar { background: linear-gradient(90deg, var(--accent-color), var(--success-color)); height: 100%; width: 0%; transition: width 0.3s; }
-        .progress-text { position: absolute; width: 100%; text-align: center; font-size: 0.85rem; font-weight: 600; line-height: 24px; color: #fff; }
+        .progress-container {
+            margin: 12px 0 6px 0; background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px; overflow: hidden; height: 22px; position: relative;
+        }
+        .progress-bar { background: linear-gradient(90deg, var(--accent), var(--success)); height: 100%; width: 0%; transition: width 0.4s ease; }
+        .progress-text { position: absolute; width: 100%; text-align: center; font-size: 0.75rem; font-weight: 700; line-height: 22px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
 
-        .tramo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border-color); }
-        .tramo-row:last-child { border-bottom: none; margin-bottom: 0; }
+        .tramo-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            margin-bottom: 10px; padding: 10px 12px; background: rgba(0,0,0,0.2);
+            border-radius: var(--radius-md); border: 1px solid var(--card-border);
+        }
 
         input[type="time"] {
-            background: #2c2c2e; border: none; color: #fff; padding: 10px;
-            border-radius: 8px; font-size: 1rem; width: 90px; text-align: center; font-family: inherit;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
+            color: #fff; padding: 8px 10px; border-radius: 8px;
+            font-size: 0.95rem; width: 95px; text-align: center; font-family: inherit; outline: none;
         }
 
-        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 4px; }
+        .btn-icon { background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; }
+        .btn-icon:hover { opacity: 1; }
         
         .btn-add {
-            width: 100%; padding: 12px; background: transparent; color: var(--accent-color);
-            border: 1px dashed var(--accent-color); border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; margin-top: 4px;
+            width: 100%; padding: 12px; background: rgba(10, 132, 255, 0.15); color: var(--accent);
+            border: 1px dashed var(--accent); border-radius: var(--radius-md);
+            font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease;
         }
+        .btn-add:active { background: rgba(10, 132, 255, 0.25); }
 
         .segmented-control {
-            display: flex; background: #2c2c2e; padding: 2px; border-radius: 9px; margin-top: 8px;
+            display: flex; background: rgba(0, 0, 0, 0.3); padding: 3px; border-radius: var(--radius-md); margin-top: 12px;
         }
         .segmented-btn {
-            flex: 1; padding: 8px 4px; border: none; background: none; color: #8e8e93;
-            font-size: 0.75rem; font-weight: 600; border-radius: 7px; cursor: pointer; text-align: center;
+            flex: 1; padding: 9px 4px; border: none; background: none; color: var(--text-muted);
+            font-size: 0.75rem; font-weight: 600; border-radius: 7px; cursor: pointer; transition: all 0.2s;
         }
-        .segmented-btn.active {
-            background: #636366; color: #fff;
-        }
+        .segmented-btn.active { background: rgba(255, 255, 255, 0.18); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 
         .btn-coche {
-            width: 100%; padding: 10px; background: #2c2c2e; color: #8e8e93;
-            border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; margin-top: 8px;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 11px; background: rgba(255, 255, 255, 0.05); color: var(--text-muted);
+            border: 1px solid var(--card-border); border-radius: var(--radius-md);
+            font-weight: 600; font-size: 0.85rem; cursor: pointer; margin-top: 10px;
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
         }
-        .btn-coche.active {
-            background: #1a365d; color: var(--accent-color); border: 0.5px solid var(--accent-color);
-        }
+        .btn-coche.active { background: rgba(10, 132, 255, 0.2); color: var(--accent); border-color: var(--accent); }
 
-        .section-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8e8e93; margin-bottom: 12px; font-weight: 600; }
-        .summary-text { display: flex; justify-content: space-between; font-size: 1rem; margin: 8px 0; }
+        .summary-text { display: flex; justify-content: space-between; font-size: 0.95rem; margin: 8px 0; }
 
-        .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 0.5px solid var(--border-color); box-sizing: border-box; }
+        .thermometer-day { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 1px solid var(--card-border); }
         .thermometer-day:last-child { border-bottom: none; }
-        .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 1rem; width: 100%; }
-        .thermometer-tramos { font-size: 0.85rem; color: #8e8e93; margin-top: 4px; text-align: left; }
+        .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem; }
+        .thermometer-tramos { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
 
-        .tabla-meses { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem; }
-        .tabla-meses th { text-align: left; color: #8e8e93; font-weight: 600; padding-bottom: 8px; border-bottom: 0.5px solid var(--border-color); }
-        .tabla-meses td { padding: 12px 0; border-bottom: 0.5px solid #2c2c2e; }
+        .tabla-meses, .diario-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .tabla-meses th, .diario-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid var(--card-border); }
+        .tabla-meses td, .diario-table td { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
         .col-right { text-align: right; }
 
         .history-header-block { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .month-navigation { display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; }
-        .nav-btn { background: #2c2c2e; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; color: #fff; }
-        .nav-btn:active { background: #3a3a3c; }
+        .month-navigation { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.85rem; }
+        .nav-btn { background: rgba(255,255,255,0.1); border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
 
-        .diario-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .diario-table th { text-align: right; color: #8e8e93; font-weight: 600; padding-bottom: 6px; border-bottom: 0.5px solid var(--border-color); }
-        .diario-table th:first-child, .diario-table td:first-child { text-align: left; }
-        .diario-table td { padding: 10px 0; border-bottom: 0.5px solid #1c1c1e; white-space: nowrap; font-family: monospace; }
-        .diario-table tr:last-child td { border-bottom: none; }
-        .diario-day-label { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 500; }
+        .backup-zone { display: flex; gap: 10px; margin-top: 12px; }
+        .btn-backup { flex: 1; padding: 11px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--card-border); border-radius: var(--radius-md); font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+        .panel-backup { display: none; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: var(--radius-lg); padding: 16px; margin-top: 15px; }
+        .panel-backup textarea { width: 100%; height: 80px; background: #000; color: var(--success); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 11px; resize: none; margin-top: 8px; box-sizing: border-box; }
         
-        .backup-zone { display: flex; gap: 12px; margin-top: 10px; }
-        .btn-backup { flex: 1; padding: 12px; background: var(--card-bg); color: #8e8e93; border: 0.5px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
-        .panel-backup { display: none; background: #1c1c1e; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-top: 15px; }
-        .panel-backup textarea { width: 100%; height: 90px; background: #000; color: var(--success-color); border: 0.5px solid var(--border-color); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 11px; box-sizing: border-box; resize: none; margin-top: 8px; }
-        .current-day-highlight { color: var(--accent-color); font-weight: 600; }
-        
-        .badge-incidencia {
-            background-color: #38383a; color: #fff;
-            padding: 2px 5px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; font-family: -apple-system, sans-serif;
-        }
-        .badge-coche {
-            background-color: #1a365d; color: var(--accent-color);
-            padding: 2px 5px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 4px;
-        }
+        .current-day-highlight { color: var(--accent); font-weight: 700; }
+        .badge-incidencia { background: rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; }
+        .badge-coche { background: rgba(10, 132, 255, 0.2); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; margin-left: 4px; }
     </style>
 </head>
 <body>
 
 <div class="app-header">
     <div class="header-title">Control de Jornada</div>
-    <div class="sync-status" id="statusSync">✓ Activo</div>
+    <div class="sync-status" id="statusSync">● Activo</div>
 </div>
 
 <div class="container">
     <div class="card card-global">
-        <div class="section-title" style="color: var(--accent-color);">Bolsa de Horas Total Acumulada</div>
-        <div style="font-size: 1.8rem; font-weight: 700; margin: 4px 0;" id="saldoGlobalTotal">0:00</div>
-        <div style="font-size: 0.8rem; color: #8e8e93;">Saldo neto acumulado ajustado al día</div>
+        <div class="section-title" style="color: var(--accent);">Bolsa de Horas Total Acumulada</div>
+        <div style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; margin: 4px 0;" id="saldoGlobalTotal">0:00</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">Saldo neto acumulado a la fecha seleccionada</div>
     </div>
 
     <div class="card">
-        <div class="section-title">Seleccionar Fecha</div>
+        <div class="section-title">Fecha Actual</div>
         <div class="date-picker-container">
             <input type="date" id="fechaActual" onchange="cambiarFecha()">
         </div>
     </div>
 
     <div class="card">
-        <div class="summary-text" style="margin-bottom: 12px;">
-            <span class="section-title" style="margin:0;">Fichajes del día</span>
-            <span id="totalDia" style="color: var(--success-color); font-weight: 600;">Total: 0h 00m</span>
+        <div class="section-title">Marcar Fichaje Rápido</div>
+        <div class="quick-punch-grid">
+            <button class="btn-punch" onclick="fichajeRapido('entrada')">▶️ Entrada</button>
+            <button class="btn-punch" onclick="fichajeRapido('pausa')">☕ Pausa</button>
+            <button class="btn-punch" onclick="fichajeRapido('salida')">⏹️ Salida</button>
+        </div>
+
+        <div class="summary-text" style="margin-bottom: 12px; align-items: center;">
+            <span class="section-title" style="margin:0;">Tramos Manuales</span>
+            <span id="totalDia" style="color: var(--success); font-weight: 700;">Total: 0h 00m</span>
         </div>
         
         <div id="tramosContenedor"></div>
         
         <div id="zonaBotonesDiarios">
-            <button class="btn-add" id="btnAñadirTramoElem" onclick="agregarTramoVacio()">➕ Añadir Tramo</button>
+            <button class="btn-add" id="btnAñadirTramoElem" onclick="agregarTramoVacio()">+ Añadir Tramo Manual</button>
             
             <div class="segmented-control">
                 <button class="segmented-btn" id="segNormal" onclick="setEstadoDia('normal')">Trabajo</button>
@@ -174,7 +212,7 @@
             </div>
 
             <button class="btn-coche" id="btnCocheElem" onclick="alternarCoche()">
-                🚗 Marcar Viaje con Coche
+                🚗 Viaje con Coche
             </button>
         </div>
     </div>
@@ -188,7 +226,7 @@
         </div>
         <div class="summary-text">
             <span>Estado / Restante:</span>
-            <strong id="estadoSemana" style="color: var(--accent-color);">0h restantes</strong>
+            <strong id="estadoSemana" style="color: var(--accent);">0h restantes</strong>
         </div>
         
         <div class="progress-container">
@@ -196,7 +234,7 @@
             <div class="progress-text" id="progressPct">0%</div>
         </div>
 
-        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 0.5px solid var(--border-color); padding-top: 5px;"></div>
+        <div id="desgloseSemanalContenedor" style="margin-top: 15px; border-top: 1px solid var(--card-border); padding-top: 5px;"></div>
     </div>
 
     <div class="card">
@@ -210,8 +248,7 @@
                     <th class="col-right">Saldo</th>
                 </tr>
             </thead>
-            <tbody id="cuerpoTablaMeses">
-            </tbody>
+            <tbody id="cuerpoTablaMeses"></tbody>
         </table>
     </div>
 
@@ -233,8 +270,7 @@
                     <th style="text-align: right;">Saldo</th>
                 </tr>
             </thead>
-            <tbody id="cuerpoDiarioHistorial">
-            </tbody>
+            <tbody id="cuerpoDiarioHistorial"></tbody>
         </table>
     </div>
 
@@ -265,7 +301,6 @@
     }
 
     let baseDatos = JSON.parse(localStorage.getItem('registro_calendario_v3')) || baseDatosDefault;
-
     let fechaSeleccionada = new Date().toISOString().split('T')[0];
     let mesHistorialOffset = 0;
 
@@ -292,22 +327,49 @@
         return baseDatos[fechaStr];
     }
 
+    function getHoraActualHHMM() {
+        const ahora = new Date();
+        const hh = String(ahora.getHours()).padStart(2, '0');
+        const mm = String(ahora.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}`;
+    }
+
+    function fichajeRapido(tipo) {
+        const obj = getDiaObj(fechaSeleccionada);
+        const horaAhora = getHoraActualHHMM();
+        
+        if (tipo === 'entrada') {
+            obj.tramos.push({ entrada: horaAhora, salida: horaAhora });
+        } else if (tipo === 'pausa' || tipo === 'salida') {
+            if (obj.tramos.length > 0) {
+                obj.tramos[obj.tramos.length - 1].salida = horaAhora;
+            } else {
+                obj.tramos.push({ entrada: horaAhora, salida: horaAhora });
+            }
+        }
+        guardarBaseDatos();
+        renderizarDia();
+        renderizarResumenes();
+    }
+
     function renderizarDia() {
         const obj = getDiaObj(fechaSeleccionada);
         const contenedor = document.getElementById('tramosContenedor');
         contenedor.innerHTML = '';
 
         if (obj.tramos.length === 0) {
-            contenedor.innerHTML = '<div style="color: #8e8e93; font-size: 0.9rem; margin: 10px 0; text-align: center;">No hay fichajes manuales este día.</div>';
+            contenedor.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; margin: 12px 0; text-align: center;">Sin registros de fichaje este día.</div>';
         } else {
             obj.tramos.forEach((tramo, index) => {
                 const row = document.createElement('div');
                 row.className = 'tramo-row';
                 row.innerHTML = `
-                    <input type="time" value="${tramo.entrada}" onchange="actualizarTramo(${index}, 'entrada', this.value)">
-                    <span style="color: #8e8e93;">a</span>
-                    <input type="time" value="${tramo.salida}" onchange="actualizarTramo(${index}, 'salida', this.value)">
-                    <button class="btn-icon" style="color: var(--danger-color);" onclick="eliminarTramo(${index})">🗑️</button>
+                    <div style="display:flex; align-items:center; gap: 8px;">
+                        <input type="time" value="${tramo.entrada}" onchange="actualizarTramo(${index}, 'entrada', this.value)">
+                        <span style="color: var(--text-muted); font-size:0.85rem;">a</span>
+                        <input type="time" value="${tramo.salida}" onchange="actualizarTramo(${index}, 'salida', this.value)">
+                    </div>
+                    <button class="btn-icon" style="color: var(--danger);" onclick="eliminarTramo(${index})">✕</button>
                 `;
                 contenedor.appendChild(row);
             });
@@ -489,10 +551,10 @@
         const estadoSemana = document.getElementById('estadoSemana');
         if (difMin >= 0) {
             estadoSemana.innerText = 'Horas Extra: +' + formatearMinutos(difMin);
-            estadoSemana.style.color = 'var(--success-color)';
+            estadoSemana.style.color = 'var(--success)';
         } else {
             estadoSemana.innerText = 'Restante: ' + formatearMinutos(Math.abs(difMin));
-            estadoSemana.style.color = 'var(--warning-color)';
+            estadoSemana.style.color = 'var(--warning)';
         }
     }
 
@@ -509,7 +571,6 @@
             const fich = calcularMinutosDia(fStr);
             const teor = getTeoricoDia(fStr);
 
-            // CORTE AL DÍA: SOLO PROCESA DÍAS HASTA LA FECHA SELECCIONADA
             if (fStr <= fechaSeleccionada && (fich > 0 || teor > 0)) {
                 const mKey = fStr.substring(0, 7);
                 if (!mesesMap[mKey]) {
@@ -532,10 +593,10 @@
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td style="color: var(--accent-color); font-weight:600;">${nombreMes}</td>
+                <td style="color: var(--accent); font-weight:600;">${nombreMes}</td>
                 <td class="col-right">${formatearMinutosDigital(data.fichado)}</td>
                 <td class="col-right">${formatearMinutosDigital(data.teorico)}</td>
-                <td class="col-right" style="color: ${saldoMin >= 0 ? 'var(--success-color)' : 'var(--danger-color)'}; font-weight:700;">
+                <td class="col-right" style="color: ${saldoMin >= 0 ? 'var(--success)' : 'var(--danger)'}; font-weight:700;">
                     ${formatearMinutosDigital(saldoMin)}
                 </td>
             `;
@@ -544,7 +605,7 @@
 
         const elemGlobal = document.getElementById('saldoGlobalTotal');
         elemGlobal.innerText = formatearMinutosDigital(saldoGlobalMin);
-        elemGlobal.style.color = saldoGlobalMin >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+        elemGlobal.style.color = saldoGlobalMin >= 0 ? 'var(--success)' : 'var(--danger)';
     }
 
     function navegarMesHistorial(dir) {
@@ -570,7 +631,6 @@
             const fechaD = new Date(yy, mm, d);
             const fStr = fechaD.toISOString().split('T')[0];
 
-            // CORTE AL DÍA: SI LA FECHA ES MAYOR A LA SELECCIONADA/ACTUAL, DETIENE LA TABLA
             if (fStr > fechaSeleccionada) {
                 break;
             }
@@ -589,13 +649,13 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
-                        <span class="diario-day-label">${nombresDias[fechaD.getDay()]} ${d < 10 ? '0' : ''}${d}</span>
+                        <span style="font-weight: 500;">${nombresDias[fechaD.getDay()]} ${d < 10 ? '0' : ''}${d}</span>
                         ${obj.incidencia !== 'normal' ? `<span class="badge-incidencia">${obj.incidencia}</span>` : ''}
                         ${obj.coche ? '<span class="badge-coche">🚗</span>' : ''}
                     </td>
                     <td style="text-align: right;">${formatearMinutosDigital(fich)}</td>
                     <td style="text-align: right;">${formatearMinutosDigital(teor)}</td>
-                    <td style="text-align: right; color: ${sald >= 0 ? 'var(--success-color)' : 'var(--danger-color)'};">
+                    <td style="text-align: right; font-weight: 600; color: ${sald >= 0 ? 'var(--success)' : 'var(--danger)'};">
                         ${sald >= 0 ? '+' : ''}${formatearMinutosDigital(sald)}
                     </td>
                 `;
