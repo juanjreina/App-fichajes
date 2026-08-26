@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Control de Jornada Pro</title>
     
-    <!-- Configuración para PWA Independiente (Standalone) -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#090a0f">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
-
-    <!-- Web App Manifest Embebido -->
     <link rel="manifest" href='data:application/json,{"name":"Control de Jornada Pro","short_name":"JornadaPro","start_url":".","display":"standalone","background_color":"#090a0f","theme_color":"#090a0f","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/5988/5988246.png","sizes":"512x512","type":"image/png"}]}'>
 
     <style>
@@ -261,10 +258,12 @@
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        const swCode = `self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
-        const blob = new Blob([swCode], { type: 'text/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        try {
+            const swCode = `self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`;
+            const blob = new Blob([swCode], { type: 'text/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+        } catch(e) {}
     }
 
     const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -310,4 +309,438 @@
         "2026-03-11":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},"2026-03-12":{"incidencia":"normal","tramos":[{"entrada":"10:22","salida":"11:16"},{"entrada":"15:36","salida":"20:16"}]},
         "2026-03-13":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:16"}]},"2026-03-14":{"incidencia":"normal","tramos":[{"entrada":"14:29","salida":"19:11"}]},
         "2026-03-15":{"incidencia":"normal","tramos":[{"entrada":"08:52","salida":"14:20"},{"entrada":"17:57","salida":"20:34"}]},"2026-03-16":{"incidencia":"normal","tramos":[]}
-   
+    };
+
+    function obtenerStorageInicial() {
+        try {
+            const guardado = localStorage.getItem('jornada_pro_db');
+            if (guardado) {
+                const parsed = JSON.parse(guardado);
+                if (parsed && typeof parsed === 'object') return parsed;
+            }
+        } catch(e) {}
+        return JSON.parse(JSON.stringify(baseDatosInicialPDF));
+    }
+
+    let baseDatos = obtenerStorageInicial();
+
+    function parsearFechaLocal(strFecha) {
+        if (!strFecha || typeof strFecha !== 'string') return new Date();
+        const partes = strFecha.split('-').map(Number);
+        if (partes.length < 3 || isNaN(partes[0])) return new Date();
+        return new Date(partes[0], partes[1] - 1, partes[2]);
+    }
+
+    function formatearFechaISO(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    let fechaActualStr = formatearFechaISO(new Date());
+    let mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
+
+    function guardarEnStorage() {
+        try {
+            localStorage.setItem('jornada_pro_db', JSON.stringify(baseDatos));
+        } catch(e) {}
+    }
+
+    function formatearMinutos(minutos, conSigno = false) {
+        const esNegativo = minutos < 0;
+        const absMin = Math.abs(Math.round(minutos));
+        const h = Math.floor(absMin / 60);
+        const m = absMin % 60;
+        const signo = esNegativo ? '-' : (conSigno ? '+' : '');
+        return `${signo}${h}h ${String(m).padStart(2, '0')}m`;
+    }
+
+    function formatearHorasSimples(minutos) {
+        const esNegativo = minutos < 0;
+        const absMin = Math.abs(Math.round(minutos));
+        const h = Math.floor(absMin / 60);
+        const m = absMin % 60;
+        return `${esNegativo ? '-' : ''}${h}:${String(m).padStart(2, '0')}`;
+    }
+
+    function calcularMinutosTramo(entrada, salida) {
+        if (!entrada || !salida) return 0;
+        const [h1, m1] = entrada.split(':').map(Number);
+        const [h2, m2] = salida.split(':').map(Number);
+        const total1 = h1 * 60 + m1;
+        const total2 = h2 * 60 + m2;
+        return total2 >= total1 ? total2 - total1 : (total2 + 24 * 60) - total1;
+    }
+
+    function obtenerDatosDia(strFecha) {
+        return baseDatos[strFecha] || { incidencia: 'normal', tramos: [], coche: false };
+    }
+
+    function calcularMinutosDia(strFecha) {
+        const datos = obtenerDatosDia(strFecha);
+        if (datos.incidencia === 'vacaciones' || datos.incidencia === 'libre') {
+            return 0;
+        }
+        let total = 0;
+        if (datos.tramos && Array.isArray(datos.tramos)) {
+            datos.tramos.forEach(t => {
+                total += calcularMinutosTramo(t.entrada, t.salida);
+            });
+        }
+        return total;
+    }
+
+    function obtenerTeoricoDia(strFecha) {
+        const date = parsearFechaLocal(strFecha);
+        const diaSemana = date.getDay();
+        const datos = obtenerDatosDia(strFecha);
+
+        if (datos.incidencia === 'vacaciones' || datos.incidencia === 'libre') {
+            return 0;
+        }
+        if (diaSemana >= 1 && diaSemana <= 5) {
+            return 4 * 60 + 45;
+        }
+        return 0;
+    }
+
+    function obtenerLunesDeSemana(strFecha) {
+        const d = parsearFechaLocal(strFecha);
+        const dia = d.getDay();
+        const diff = dia === 0 ? -6 : 1 - dia;
+        d.setDate(d.getDate() + diff);
+        return d;
+    }
+
+    function renderizarDiaActual() {
+        const datos = obtenerDatosDia(fechaActualStr);
+        const contenedor = document.getElementById('tramosContenedor');
+        contenedor.innerHTML = '';
+
+        document.getElementById('segNormal').className = `segmented-btn ${datos.incidencia === 'normal' ? 'active' : ''}`;
+        document.getElementById('segLibre').className = `segmented-btn ${datos.incidencia === 'libre' ? 'active' : ''}`;
+        document.getElementById('segVacaciones').className = `segmented-btn ${datos.incidencia === 'vacaciones' ? 'active' : ''}`;
+
+        const btnCoche = document.getElementById('btnCocheElem');
+        btnCoche.className = `btn-coche ${datos.coche ? 'active' : ''}`;
+
+        if (datos.incidencia === 'normal') {
+            if (datos.tramos && datos.tramos.length > 0) {
+                datos.tramos.forEach((t, idx) => {
+                    const row = document.createElement('div');
+                    row.className = 'tramo-row';
+                    row.innerHTML = `
+                        <input type="time" value="${t.entrada || ''}" onchange="actualizarTramo(${idx}, 'entrada', this.value)">
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">a</span>
+                        <input type="time" value="${t.salida || ''}" onchange="actualizarTramo(${idx}, 'salida', this.value)">
+                        <button class="btn-icon" onclick="eliminarTramo(${idx})">✕</button>
+                    `;
+                    contenedor.appendChild(row);
+                });
+            }
+            document.getElementById('btnAñadirTramoElem').style.display = 'block';
+        } else {
+            document.getElementById('btnAñadirTramoElem').style.display = 'none';
+            const estadoTexto = datos.incidencia === 'vacaciones' ? '🌴 Día de Vacaciones' : '💤 Día Libre';
+            contenedor.innerHTML = `<div style="text-align:center; padding:15px 0; color:var(--text-muted); font-size:0.9rem;">${estadoTexto}</div>`;
+        }
+
+        const minutosDia = calcularMinutosDia(fechaActualStr);
+        document.getElementById('totalDia').textContent = `Total: ${formatearMinutos(minutosDia)}`;
+    }
+
+    function renderizarTermometroSemanal() {
+        const lunes = obtenerLunesDeSemana(fechaActualStr);
+        const contenedor = document.getElementById('desgloseSemanalContenedor');
+        contenedor.innerHTML = '';
+
+        let totalMinutosSemana = 0;
+        let teoricoSemana = 0;
+
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i);
+            const claveFecha = formatearFechaISO(d);
+            const datos = obtenerDatosDia(claveFecha);
+
+            const minutosDia = calcularMinutosDia(claveFecha);
+            const teoricoDia = obtenerTeoricoDia(claveFecha);
+
+            totalMinutosSemana += minutosDia;
+            teoricoSemana += teoricoDia;
+
+            const esSeleccionado = claveFecha === fechaActualStr;
+            const item = document.createElement('div');
+            item.className = 'thermometer-day';
+            item.onclick = () => {
+                document.getElementById('fechaActual').value = claveFecha;
+                cambiarFecha();
+            };
+
+            let tramosTexto = '';
+            if (datos.incidencia === 'vacaciones') {
+                tramosTexto = '<span class="badge-incidencia">🌴 Vacaciones</span>';
+            } else if (datos.incidencia === 'libre') {
+                tramosTexto = '<span class="badge-incidencia">💤 Libre</span>';
+            } else if (datos.tramos && datos.tramos.length > 0) {
+                tramosTexto = datos.tramos.map(t => `${t.entrada || '--:--'} - ${t.salida || '--:--'}`).join(', ');
+            } else {
+                tramosTexto = 'Sin registros';
+            }
+
+            if (datos.coche) {
+                tramosTexto += ' <span class="badge-coche">🚗 Coche</span>';
+            }
+
+            item.innerHTML = `
+                <div class="thermometer-header ${esSeleccionado ? 'current-day-highlight' : ''}">
+                    <span>${nombresDiasCompletos[d.getDay()]} (${d.getDate()})</span>
+                    <span>${formatearMinutos(minutosDia)}</span>
+                </div>
+                <div class="thermometer-tramos">${tramosTexto}</div>
+            `;
+            contenedor.appendChild(item);
+        }
+
+        document.getElementById('totalSemana').textContent = formatearMinutos(totalMinutosSemana);
+        const restante = teoricoSemana - totalMinutosSemana;
+        const elemEstado = document.getElementById('estadoSemana');
+        
+        if (restante <= 0) {
+            elemEstado.style.color = 'var(--success)';
+            elemEstado.textContent = `Completada (+${formatearMinutos(Math.abs(restante))})`;
+        } else {
+            elemEstado.style.color = 'var(--accent)';
+            elemEstado.textContent = `${formatearMinutos(restante)} restantes`;
+        }
+
+        const pct = teoricoSemana > 0 ? Math.min(100, Math.round((totalMinutosSemana / teoricoSemana) * 100)) : 100;
+        document.getElementById('progressBar').style.width = `${pct}%`;
+        document.getElementById('progressPct').textContent = `${pct}%`;
+    }
+
+    function renderizarResumenMensualYGlobal() {
+        const mesesMap = {};
+
+        Object.keys(baseDatosInicialPDF).forEach(k => {
+            const ym = k.substring(0, 7);
+            if (!mesesMap[ym]) mesesMap[ym] = { fichado: 0, teorico: 0 };
+        });
+
+        Object.keys(baseDatos).forEach(k => {
+            const ym = k.substring(0, 7);
+            if (!mesesMap[ym]) mesesMap[ym] = { fichado: 0, teorico: 0 };
+            mesesMap[ym].fichado += calcularMinutosDia(k);
+            mesesMap[ym].teorico += obtenerTeoricoDia(k);
+        });
+
+        Object.keys(resumenOficialPDF).forEach(ym => {
+            mesesMap[ym] = resumenOficialPDF[ym];
+        });
+
+        const tbody = document.getElementById('cuerpoTablaMeses');
+        tbody.innerHTML = '';
+
+        let saldoGlobalMinutos = 0;
+        const mesesOrdenados = Object.keys(mesesMap).sort();
+
+        mesesOrdenados.forEach(ym => {
+            const data = mesesMap[ym];
+            const saldo = data.fichado - data.teorico;
+            saldoGlobalMinutos += saldo;
+
+            const [año, mes] = ym.split('-');
+            const nombreMes = mesesNombres[parseInt(mes, 10) - 1];
+
+            const colorSaldo = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${nombreMes} ${año}</td>
+                <td class="col-right">${formatearHorasSimples(data.fichado)}</td>
+                <td class="col-right">${formatearHorasSimples(data.teorico)}</td>
+                <td class="col-right" style="color: ${colorSaldo}; font-weight: 600;">${formatearHorasSimples(saldo)}</td>
+            `;
+            tbody.appendChild(fila);
+        });
+
+        const elemSaldoGlobal = document.getElementById('saldoGlobalTotal');
+        elemSaldoGlobal.textContent = formatearHorasSimples(saldoGlobalMinutos);
+        elemSaldoGlobal.style.color = saldoGlobalMinutos >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    function renderizarHistorialDiario() {
+        const año = mesHistorialSeleccionado.getFullYear();
+        const mes = mesHistorialSeleccionado.getMonth();
+        
+        document.getElementById('labelMesHistorial').textContent = `${mesesNombres[mes]} ${año}`;
+        const tbody = document.getElementById('cuerpoDiarioHistorial');
+        tbody.innerHTML = '';
+
+        const totalDiasEnMes = new Date(año, mes + 1, 0).getDate();
+
+        for (let dia = 1; dia <= totalDiasEnMes; dia++) {
+            const fechaStr = `${año}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+            const datos = obtenerDatosDia(fechaStr);
+            const d = parsearFechaLocal(fechaStr);
+            const diaSem = nombresDias[d.getDay()];
+
+            const minutosDia = calcularMinutosDia(fechaStr);
+            const teoricoDia = obtenerTeoricoDia(fechaStr);
+            const saldo = minutosDia - teoricoDia;
+
+            let descFichajes = '-';
+            if (datos.incidencia === 'vacaciones') descFichajes = 'Vacaciones';
+            else if (datos.incidencia === 'libre') descFichajes = 'Libre';
+            else if (datos.tramos && datos.tramos.length > 0) {
+                descFichajes = datos.tramos.map(t => `${t.entrada || '--'}-${t.salida || '--'}`).join(', ');
+            }
+
+            const fila = document.createElement('tr');
+            const colorSaldo = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
+            fila.innerHTML = `
+                <td><strong>${dia}</strong> <span style="color:var(--text-muted); font-size:0.75rem;">${diaSem}</span></td>
+                <td><span class="txt-fichajes-diarios">${descFichajes}</span></td>
+                <td class="col-right">${formatearHorasSimples(minutosDia)}</td>
+                <td class="col-right">${formatearHorasSimples(teoricoDia)}</td>
+                <td class="col-right" style="color:${colorSaldo}; font-weight:600;">${formatearHorasSimples(saldo)}</td>
+            `;
+            tbody.appendChild(fila);
+        }
+    }
+
+    function actualizarInterfazCompleta() {
+        renderizarDiaActual();
+        renderizarTermometroSemanal();
+        renderizarResumenMensualYGlobal();
+        renderizarHistorialDiario();
+    }
+
+    function cambiarFecha() {
+        const val = document.getElementById('fechaActual').value;
+        if (val) {
+            fechaActualStr = val;
+            mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
+            actualizarInterfazCompleta();
+        }
+    }
+
+    function agregarTramoVacio() {
+        if (!baseDatos[fechaActualStr]) {
+            baseDatos[fechaActualStr] = { incidencia: 'normal', tramos: [], coche: false };
+        }
+        if (!baseDatos[fechaActualStr].tramos) {
+            baseDatos[fechaActualStr].tramos = [];
+        }
+        baseDatos[fechaActualStr].tramos.push({ entrada: '15:00', salida: '20:00' });
+        guardarEnStorage();
+        actualizarInterfazCompleta();
+    }
+
+    function actualizarTramo(idx, campo, valor) {
+        if (baseDatos[fechaActualStr] && baseDatos[fechaActualStr].tramos && baseDatos[fechaActualStr].tramos[idx]) {
+            baseDatos[fechaActualStr].tramos[idx][campo] = valor;
+            guardarEnStorage();
+            actualizarInterfazCompleta();
+        }
+    }
+
+    function eliminarTramo(idx) {
+        if (baseDatos[fechaActualStr] && baseDatos[fechaActualStr].tramos) {
+            baseDatos[fechaActualStr].tramos.splice(idx, 1);
+            guardarEnStorage();
+            actualizarInterfazCompleta();
+        }
+    }
+
+    function setEstadoDia(tipo) {
+        if (!baseDatos[fechaActualStr]) {
+            baseDatos[fechaActualStr] = { incidencia: tipo, tramos: [], coche: false };
+        } else {
+            baseDatos[fechaActualStr].incidencia = tipo;
+        }
+        guardarEnStorage();
+        actualizarInterfazCompleta();
+    }
+
+    function alternarCoche() {
+        if (!baseDatos[fechaActualStr]) {
+            baseDatos[fechaActualStr] = { incidencia: 'normal', tramos: [], coche: true };
+        } else {
+            baseDatos[fechaActualStr].coche = !baseDatos[fechaActualStr].coche;
+        }
+        guardarEnStorage();
+        actualizarInterfazCompleta();
+    }
+
+    function navegarMesHistorial(delta) {
+        mesHistorialSeleccionado = new Date(mesHistorialSeleccionado.getFullYear(), mesHistorialSeleccionado.getMonth() + delta, 1);
+        renderizarHistorialDiario();
+    }
+
+    function mostrarExportar() {
+        const panel = document.getElementById('panelBackup');
+        const txt = document.getElementById('txtBackup');
+        const btn = document.getElementById('btnAccionBackup');
+        const tit = document.getElementById('backupTitle');
+
+        panel.style.display = 'block';
+        tit.textContent = 'Exportar Copia de Seguridad';
+        txt.value = JSON.stringify(baseDatos);
+        btn.textContent = 'Copiar al Portapapeles';
+        btn.onclick = () => {
+            txt.select();
+            navigator.clipboard.writeText(txt.value);
+            alert('¡Datos copiados al portapapeles!');
+        };
+    }
+
+    function mostrarImportar() {
+        const panel = document.getElementById('panelBackup');
+        const txt = document.getElementById('txtBackup');
+        const btn = document.getElementById('btnAccionBackup');
+        const tit = document.getElementById('backupTitle');
+
+        panel.style.display = 'block';
+        tit.textContent = 'Importar Copia de Seguridad';
+        txt.value = '';
+        btn.textContent = 'Restaurar Datos';
+        btn.onclick = () => {
+            try {
+                const parsed = JSON.parse(txt.value);
+                if (parsed && typeof parsed === 'object') {
+                    baseDatos = parsed;
+                    guardarEnStorage();
+                    actualizarInterfazCompleta();
+                    panel.style.display = 'none';
+                    alert('Datos importados correctamente.');
+                }
+            } catch (e) {
+                alert('El formato JSON no es válido.');
+            }
+        };
+    }
+
+    function borrarTodoElHistorial() {
+        if (confirm('¿Seguro que deseas reiniciar todos los datos a la versión inicial?')) {
+            baseDatos = JSON.parse(JSON.stringify(baseDatosInicialPDF));
+            guardarEnStorage();
+            actualizarInterfazCompleta();
+        }
+    }
+
+    function iniciarApp() {
+        const inputFecha = document.getElementById('fechaActual');
+        if (inputFecha) {
+            inputFecha.value = fechaActualStr;
+            actualizarInterfazCompleta();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarApp);
+    } else {
+        iniciarApp();
+    }
+</script>
+</body>
+</html>
