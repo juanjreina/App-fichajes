@@ -67,7 +67,6 @@
 
         .section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 10px; font-weight: 700; }
 
-        /* BLOQUE INTEGRADO FECHA + FICHAJE */
         .date-badge-row {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 12px; gap: 10px;
@@ -123,7 +122,6 @@
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 0.88rem; }
         .thermometer-tramos { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
 
-        /* ACCORDIONS / DESPLEGABLES */
         .collapsible-header {
             display: flex; justify-content: space-between; align-items: center;
             cursor: pointer; padding: 4px 0; font-weight: 700; font-size: 0.85rem;
@@ -163,14 +161,14 @@
 </div>
 
 <div class="container">
-    <!-- 1. BOLSA TOTAL ACUMULADA -->
+    <!-- BOLSA TOTAL ACUMULADA -->
     <div class="card card-global">
         <div class="section-title" style="color: var(--accent); margin-bottom: 4px;">Bolsa de Horas Total Acumulada</div>
         <div style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; margin: 4px 0;" id="saldoGlobalTotal">-19:26</div>
         <div style="font-size: 0.75rem; color: var(--text-muted);">Saldo oficial consolidado frente a la administración</div>
     </div>
 
-    <!-- 2. REGISTRO INTEGRADO: FECHA + FICHAJES DEL DÍA -->
+    <!-- REGISTRO INTEGRADO: FECHA + FICHAJES DEL DÍA -->
     <div class="card">
         <div class="date-badge-row">
             <div class="date-input-wrap">
@@ -193,7 +191,7 @@
         </div>
     </div>
 
-    <!-- 3. TERMÓMETRO SEMANAL (OBJETIVO 35H) -->
+    <!-- TERMÓMETRO SEMANAL -->
     <div class="card">
         <div class="section-title" id="tituloSemana">Termómetro Semanal (Objetivo 35h)</div>
         
@@ -214,7 +212,7 @@
         <div id="desgloseSemanalContenedor" style="margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 4px;"></div>
     </div>
 
-    <!-- 4. RESUMEN MENSUAL (DESPLEGABLE) -->
+    <!-- RESUMEN MENSUAL DESPLEGABLE -->
     <div class="card">
         <div class="collapsible-header" id="headerMeses" onclick="toggleSeccion('contenidoMeses', 'headerMeses')">
             <span>Resumen Mensual Acumulado</span>
@@ -235,7 +233,7 @@
         </div>
     </div>
 
-    <!-- 5. DETALLE DIARIO (DESPLEGABLE HASTA ÚLTIMO DÍA FICHADO) -->
+    <!-- DETALLE DIARIO DESPLEGABLE -->
     <div class="card">
         <div class="collapsible-header" id="headerDiario" onclick="toggleSeccion('contenidoDiario', 'headerDiario')">
             <span>Detalle Diario</span>
@@ -264,7 +262,7 @@
         </div>
     </div>
 
-    <!-- 6. COPIAS DE SEGURIDAD -->
+    <!-- BACKUP -->
     <div class="backup-zone">
         <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
         <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
@@ -279,7 +277,6 @@
 </div>
 
 <script>
-    // Limpieza forzada de cachés antiguas de versiones anteriores
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => { for (let r of regs) r.unregister(); });
     }
@@ -288,116 +285,37 @@
     const nombresDiasCompletos = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    // 1. MESES OFICIALES INMUTABLES (Enero a Agosto según informe oficial de la administración)
-    // Sumatorio neto oficial exacto = -15h 42m
-    const mesesOficialesCerrados = {
-        "2026-01": { fichado: 75 * 60 + 57,  teorico: 95 * 60 + 12 },  // -19:15
-        "2026-02": { fichado: 117 * 60 + 5,  teorico: 112 * 60 + 0 },  // +05:05
-        "2026-03": { fichado: 96 * 60 + 17,  teorico: 106 * 60 + 24 }, // -10:07
-        "2026-04": { fichado: 79 * 60 + 2,   teorico: 89 * 60 + 12 },  // -10:10
-        "2026-05": { fichado: 99 * 60 + 8,   teorico: 100 * 60 + 48 }, // -01:40
-        "2026-06": { fichado: 149 * 60 + 58, teorico: 147 * 60 + 0 },  // +02:58
-        "2026-07": { fichado: 175 * 60 + 12, teorico: 161 * 60 + 0 },  // +14:12
-        "2026-08": { fichado: 51 * 60 + 15,  teorico: 42 * 60 + 0 }    // +09:15
-    };
+    // HISTORIAL OFICIAL COMPLETO 2026 (Día por día extraído de las 10 páginas de tu informe + salida 08/09 a las 20:15)
+    const baseDatosInicialOficial = {
+        "2026-01-02":{"incidencia":"vacaciones","tramos":[]},"2026-01-05":{"incidencia":"vacaciones","tramos":[]},"2026-01-07":{"incidencia":"vacaciones","tramos":[]},
+        "2026-01-08":{"incidencia":"normal","tramos":[{"entrada":"15:51","salida":"19:59"}]},"2026-01-09":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}]},
+        "2026-01-12":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:14"}]},"2026-01-13":{"incidencia":"normal","tramos":[{"entrada":"15:51","salida":"20:13"}]},
+        "2026-01-14":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:15"}]},"2026-01-15":{"incidencia":"normal","tramos":[{"entrada":"15:27","salida":"20:08"}]},
+        "2026-01-16":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}]},"2026-01-19":{"incidencia":"normal","tramos":[{"entrada":"15:53","salida":"20:00"}]},
+        "2026-01-20":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:05"}]},"2026-01-21":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},
+        "2026-01-22":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:13"}]},"2026-01-23":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:13"}]},
+        "2026-01-26":{"incidencia":"normal","tramos":[{"entrada":"15:31","salida":"20:15"}]},"2026-01-27":{"incidencia":"normal","tramos":[{"entrada":"15:33","salida":"20:09"}]},
+        "2026-01-28":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:01"}]},"2026-01-29":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},
+        "2026-01-30":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:02"}]},
 
-    // 2. SEPTIEMBRE DINÁMICO (Con la salida de las 20:15 del 08/09 incluida)
-    const baseDatosInicialDinamica = {
-        "2026-09-01":{"incidencia":"normal","tramos":[{"entrada":"11:28","salida":"20:03"}]},
-        "2026-09-02":{"incidencia":"normal","tramos":[{"entrada":"11:44","salida":"20:02"}]},
-        "2026-09-03":{"incidencia":"normal","tramos":[{"entrada":"11:40","salida":"20:04"}]},
-        "2026-09-04":{"incidencia":"ausencia","tramos":[]},
-        "2026-09-07":{"incidencia":"normal","tramos":[{"entrada":"08:02","salida":"15:00"}]},
-        "2026-09-08":{"incidencia":"normal","tramos":[{"entrada":"09:45","salida":"13:39"},{"entrada":"15:46","salida":"20:15"}]},
-        "2026-09-09":{"incidencia":"normal","tramos":[{"entrada":"15:46","salida":"20:30"}]}
-    };
+        "2026-02-02":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:16"}]},"2026-02-03":{"incidencia":"normal","tramos":[{"entrada":"15:40","salida":"20:12"}]},
+        "2026-02-04":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:02"}]},"2026-02-05":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:58"}]},
+        "2026-02-06":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:05"}]},"2026-02-08":{"incidencia":"normal","tramos":[{"entrada":"10:30","salida":"16:14"}]},
+        "2026-02-09":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:17"}]},"2026-02-10":{"incidencia":"normal","tramos":[{"entrada":"15:48","salida":"20:14"}]},
+        "2026-02-11":{"incidencia":"normal","tramos":[{"entrada":"12:10","salida":"14:00"},{"entrada":"15:24","salida":"20:12"}]},
+        "2026-02-12":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:15"}]},"2026-02-13":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}]},
+        "2026-02-16":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:16"}]},"2026-02-17":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:16"}]},
+        "2026-02-18":{"incidencia":"normal","tramos":[{"entrada":"15:49","salida":"20:14"}]},"2026-02-19":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:19"}]},
+        "2026-02-20":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}]},"2026-02-21":{"incidencia":"normal","tramos":[{"entrada":"08:21","salida":"14:16"},{"entrada":"15:58","salida":"19:55"}]},
+        "2026-02-22":{"incidencia":"normal","tramos":[{"entrada":"08:28","salida":"13:15"}]},"2026-02-23":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:21"}]},
+        "2026-02-24":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:18"}]},"2026-02-25":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:16"}]},
+        "2026-02-26":{"incidencia":"ausencia","tramos":[]},"2026-02-27":{"incidencia":"normal","tramos":[{"entrada":"15:40","salida":"20:17"}]},
+        "2026-02-28":{"incidencia":"normal","tramos":[{"entrada":"08:10","salida":"15:03"}]},
 
-    const CLAVE_STORAGE = 'jornada_pro_v5_exacta';
-
-    function obtenerStorage() {
-        try {
-            const guardado = localStorage.getItem(CLAVE_STORAGE);
-            if (guardado) {
-                const parsed = JSON.parse(guardado);
-                if (parsed && typeof parsed === 'object') return parsed;
-            }
-        } catch(e) {}
-        return JSON.parse(JSON.stringify(baseDatosInicialDinamica));
-    }
-
-    let baseDatos = obtenerStorage();
-
-    function parsearFechaLocal(strFecha) {
-        if (!strFecha || typeof strFecha !== 'string') return new Date();
-        const partes = strFecha.split('-').map(Number);
-        if (partes.length < 3 || isNaN(partes[0])) return new Date();
-        return new Date(partes[0], partes[1] - 1, partes[2]);
-    }
-
-    function formatearFechaISO(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    }
-
-    // Fecha fijada en hoy
-    let fechaActualStr = "2026-09-10";
-    let mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
-
-    function guardarEnStorage() {
-        try {
-            localStorage.setItem(CLAVE_STORAGE, JSON.stringify(baseDatos));
-        } catch(e) {}
-    }
-
-    function formatearMinutos(minutos, conSigno = false) {
-        const esNegativo = minutos < 0;
-        const absMin = Math.abs(Math.round(minutos));
-        const h = Math.floor(absMin / 60);
-        const m = absMin % 60;
-        const signo = esNegativo ? '-' : (conSigno ? '+' : '');
-        return `${signo}${h}h ${String(m).padStart(2, '0')}m`;
-    }
-
-    function formatearHorasSimples(minutos) {
-        const esNegativo = minutos < 0;
-        const absMin = Math.abs(Math.round(minutos));
-        const h = Math.floor(absMin / 60);
-        const m = absMin % 60;
-        return `${esNegativo ? '-' : ''}${h}:${String(m).padStart(2, '0')}`;
-    }
-
-    function calcularMinutosTramo(entrada, salida) {
-        if (!entrada || !salida) return 0;
-        const [h1, m1] = entrada.split(':').map(Number);
-        const [h2, m2] = salida.split(':').map(Number);
-        const total1 = h1 * 60 + m1;
-        const total2 = h2 * 60 + m2;
-        return total2 >= total1 ? total2 - total1 : (total2 + 24 * 60) - total1;
-    }
-
-    function tieneDatosDia(strFecha) {
-        const d = baseDatos[strFecha];
-        if (!d) return false;
-        if (d.incidencia === 'vacaciones' || d.incidencia === 'libre' || d.incidencia === 'ausencia') return true;
-        return d.tramos && d.tramos.length > 0;
-    }
-
-    function calcularMinutosDia(strFecha) {
-        const datos = baseDatos[strFecha];
-        if (!datos || datos.incidencia === 'vacaciones' || datos.incidencia === 'libre' || datos.incidencia === 'ausencia') {
-            return 0;
-        }
-        let total = 0;
-        if (datos.tramos && Array.isArray(datos.tramos)) {
-            datos.tramos.forEach(t => {
-                total += calcularMinutosTramo(t.entrada, t.salida);
-            });
-        }
-        return total;
-    }
-
-    // Teórico oficial idéntico al del ayuntamiento
-    function obtenerTeoricoDia(strFecha) {
-        const date = parsearFec
+        "2026-03-02":{"incidencia":"normal","tramos":[{"entrada":"15:31","salida":"20:15"}]},"2026-03-03":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:17"}]},
+        "2026-03-04":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:16"}]},"2026-03-05":{"incidencia":"normal","tramos":[{"entrada":"15:35","salida":"20:15"}]},
+        "2026-03-06":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}]},"2026-03-09":{"incidencia":"normal","tramos":[{"entrada":"15:32","salida":"20:35"}]},
+        "2026-03-10":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:12"}]},"2026-03-11":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}]},
+        "2026-03-12":{"incidencia":"normal","tramos":[{"entrada":"10:22","salida":"11:16"},{"entrada":"15:36","salida":"20:16"}]},
+        "2026-03-13":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:16"}]},"2026-03-14":{"incidencia":"normal","tramos":[{"entrada":"14:29","salida":"19:11"}]},
+        "
