@@ -3,935 +3,495 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Control de Jornada Pro</title>
-    
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <meta name="theme-color" content="#090a0f">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
-
+    <title>Control de Jornada</title>
+    <meta name="theme-color" content="#0d0f15">
     <style>
         :root {
-            --bg-color: #090a0f;
-            --card-bg: rgba(255, 255, 255, 0.05);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-main: #f5f5f7;
-            --text-muted: #8e8e93;
+            --bg: #0d0f15;
+            --card: #161a23;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #f0f2f5;
+            --muted: #8a919e;
             --accent: #0a84ff;
             --success: #30d158;
             --danger: #ff453a;
-            --warning: #ff9f0a;
-            --radius-lg: 16px;
-            --radius-md: 10px;
+            --radius: 14px;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0; padding: 0 0 30px 0;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 16px;
             display: flex; flex-direction: column; align-items: center;
-            user-select: none;
         }
-
-        .app-header {
-            width: 100%; padding: calc(14px + env(safe-area-inset-top)) 18px 14px 18px;
-            display: flex; justify-content: space-between; align-items: center;
-            background-color: rgba(9, 10, 15, 0.85);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--card-border);
-            position: sticky; top: 0; z-index: 100;
-        }
-
-        .header-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
-        .sync-status { font-size: 0.72rem; color: var(--success); font-weight: 600; background: rgba(48, 209, 88, 0.12); border: 1px solid rgba(48, 209, 88, 0.3); padding: 3px 10px; border-radius: 20px; }
-
-        .container { width: 100%; max-width: 480px; padding: 14px; }
+        .container { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+        .title { font-size: 1.15rem; font-weight: 700; }
+        .badge-status { background: rgba(48, 209, 88, 0.15); color: var(--success); font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
 
         .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: var(--radius-lg);
-            padding: 16px; margin-bottom: 14px;
-            backdrop-filter: blur(10px);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
         }
 
-        .card-global {
-            background: linear-gradient(135deg, rgba(10, 132, 255, 0.12), rgba(28, 28, 30, 0.6));
-            border: 1px solid rgba(10, 132, 255, 0.3);
+        .card-bolsa {
+            background: linear-gradient(145deg, rgba(10, 132, 255, 0.15), rgba(22, 26, 35, 0.9));
+            border-color: rgba(10, 132, 255, 0.3);
             text-align: center;
         }
+        .bolsa-val { font-size: 2.3rem; font-weight: 800; margin: 4px 0; letter-spacing: -0.5px; }
 
-        .section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 10px; font-weight: 700; }
+        .row-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 700; }
 
-        .date-badge-row {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px; gap: 10px;
+        .date-control {
+            display: flex; gap: 10px; align-items: center;
+            background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+            border-radius: 10px; padding: 6px 12px; margin-bottom: 12px;
         }
-        .date-input-wrap { flex: 1; }
         input[type="date"] {
-            background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border);
-            color: #fff; padding: 9px 12px; border-radius: var(--radius-md);
-            font-size: 0.95rem; width: 100%; text-align: center; font-family: inherit; outline: none;
-            font-weight: 600;
+            background: none; border: none; color: #fff; font-size: 1rem;
+            font-weight: 600; font-family: inherit; outline: none; width: 100%;
         }
-        .badge-dia-total {
-            background: rgba(48, 209, 88, 0.15); color: var(--success);
-            padding: 8px 12px; border-radius: var(--radius-md);
-            font-weight: 700; font-size: 0.95rem; white-space: nowrap;
-            border: 1px solid rgba(48, 209, 88, 0.25);
-        }
+        .dia-badge { font-weight: 700; font-size: 0.95rem; color: var(--success); white-space: nowrap; }
 
-        .tramo-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 8px;
-            margin-bottom: 8px; padding: 8px 10px; background: rgba(0,0,0,0.25);
-            border-radius: var(--radius-md); border: 1px solid var(--card-border);
+        .tramo {
+            display: flex; gap: 8px; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            padding: 8px 10px; border-radius: 8px; margin-bottom: 8px;
         }
-
         input[type="time"] {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--card-border);
-            color: #fff; padding: 7px 8px; border-radius: 8px;
-            font-size: 0.92rem; width: 90px; text-align: center; font-family: inherit; outline: none;
+            background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+            color: #fff; padding: 6px 8px; border-radius: 6px; font-family: inherit; font-size: 0.9rem; outline: none;
         }
-
-        .btn-icon { background: none; border: none; font-size: 1.1rem; cursor: pointer; opacity: 0.7; color: var(--danger); }
-        .btn-icon:hover { opacity: 1; }
-        
+        .btn-del { background: none; border: none; color: var(--danger); font-size: 1.1rem; cursor: pointer; padding: 4px; }
         .btn-add {
-            width: 100%; padding: 11px; background: rgba(10, 132, 255, 0.15); color: var(--accent);
-            border: 1px dashed var(--accent); border-radius: var(--radius-md);
-            font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: background 0.2s;
+            width: 100%; padding: 10px; background: rgba(10, 132, 255, 0.15); color: var(--accent);
+            border: 1px dashed var(--accent); border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
         }
-        .btn-add:active { background: rgba(10, 132, 255, 0.25); }
 
-        .segmented-control { display: flex; background: rgba(0, 0, 0, 0.3); padding: 3px; border-radius: var(--radius-md); margin-top: 10px; gap: 2px; }
-        .segmented-btn { flex: 1; padding: 8px 2px; border: none; background: none; color: var(--text-muted); font-size: 0.74rem; font-weight: 600; border-radius: 7px; cursor: pointer; }
-        .segmented-btn.active { background: rgba(255, 255, 255, 0.18); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .actions-grid { display: flex; gap: 4px; margin-top: 10px; }
+        .act-btn {
+            flex: 1; padding: 8px 2px; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+            color: var(--muted); border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer;
+        }
+        .act-btn.active { background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.3); }
 
-        .summary-text { display: flex; justify-content: space-between; font-size: 0.92rem; margin: 6px 0; }
-
-        .progress-container { margin: 10px 0 6px 0; background: rgba(255, 255, 255, 0.08); border-radius: 12px; overflow: hidden; height: 20px; position: relative; }
+        .progress-bar-wrap { background: rgba(255,255,255,0.08); height: 18px; border-radius: 10px; overflow: hidden; position: relative; margin: 10px 0; }
         .progress-bar { background: linear-gradient(90deg, var(--accent), var(--success)); height: 100%; width: 0%; transition: width 0.3s ease; }
-        .progress-text { position: absolute; width: 100%; text-align: center; font-size: 0.72rem; font-weight: 700; line-height: 20px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .progress-txt { position: absolute; width: 100%; text-align: center; line-height: 18px; font-size: 0.7rem; font-weight: 700; color: #fff; }
 
-        .thermometer-day { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid var(--card-border); cursor: pointer; }
-        .thermometer-day:last-child { border-bottom: none; }
-        .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 0.88rem; }
-        .thermometer-tramos { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .day-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .day-row:last-child { border-bottom: none; }
 
-        .collapsible-header {
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; padding: 4px 0; font-weight: 700; font-size: 0.85rem;
-            color: var(--text-main);
+        .accordion-btn {
+            width: 100%; display: flex; justify-content: space-between; align-items: center;
+            background: none; border: none; color: var(--text); padding: 0; cursor: pointer; font-family: inherit;
         }
-        .collapsible-header span:first-child { text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); font-size: 0.75rem; }
-        .collapsible-arrow { transition: transform 0.25s ease; color: var(--accent); font-size: 0.8rem; }
-        .collapsible-content { display: none; margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 10px; }
-        .collapsible-content.open { display: block; }
-        .collapsible-header.open .collapsible-arrow { transform: rotate(180deg); }
+        .accordion-content { display: none; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
+        .accordion-content.open { display: block; }
+        .arrow { font-size: 0.75rem; color: var(--accent); transition: transform 0.2s; }
+        .arrow.open { transform: rotate(180deg); }
 
-        .tabla-meses, .diario-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        .tabla-meses th, .diario-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); }
-        .tabla-meses td, .diario-table td { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .col-right { text-align: right; }
-
-        .history-nav-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .month-navigation { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.82rem; }
-        .nav-btn { background: rgba(255,255,255,0.1); border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; }
-
-        .txt-fichajes-diarios { font-family: monospace; font-size: 0.72rem; color: var(--text-muted); }
-
-        .backup-zone { display: flex; gap: 8px; margin-top: 8px; }
-        .btn-backup { flex: 1; padding: 10px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--card-border); border-radius: var(--radius-md); font-size: 0.78rem; cursor: pointer; font-weight: 600; }
-        .panel-backup { display: none; background: var(--bg-color); border: 1px solid var(--card-border); border-radius: var(--radius-lg); padding: 14px; margin-top: 12px; }
-        .panel-backup textarea { width: 100%; height: 80px; background: #000; color: var(--success); border: 1px solid var(--card-border); border-radius: 8px; padding: 8px; font-family: monospace; font-size: 11px; resize: none; margin-top: 8px; box-sizing: border-box; }
-
-        .current-day-highlight { color: var(--accent); font-weight: 700; }
-        .badge-incidencia { background: rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th { text-align: left; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
+        td { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .text-r { text-align: right; }
     </style>
 </head>
 <body>
 
-<div class="app-header">
-    <div class="header-title">Control de Jornada</div>
-    <div class="sync-status">● Activo</div>
-</div>
-
 <div class="container">
-    <!-- BOLSA TOTAL ACUMULADA -->
-    <div class="card card-global">
-        <div class="section-title" style="color: var(--accent); margin-bottom: 4px;">Bolsa de Horas Total Acumulada</div>
-        <div style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px; margin: 4px 0;" id="saldoGlobalTotal">0:00</div>
-        <div style="font-size: 0.75rem; color: var(--text-muted);">Saldo oficial consolidado frente a la administración</div>
+    <div class="header">
+        <div class="title">Control de Jornada</div>
+        <div class="badge-status">● Oficial</div>
     </div>
 
-    <!-- REGISTRO INTEGRADO: FECHA + FICHAJES DEL DÍA -->
+    <!-- 1. BOLSA DE HORAS OFICIAL -->
+    <div class="card card-bolsa">
+        <div class="label" style="color: var(--accent);">Bolsa de Horas Total Acumulada</div>
+        <div class="bolsa-val" id="totalBolsa" style="color: var(--danger);">-19:26</div>
+        <div style="font-size: 0.75rem; color: var(--muted);">Oficial consolidado (corte a 09/09 con salida de las 20:15)</div>
+    </div>
+
+    <!-- 2. REGISTRO INTEGRADO DEL DÍA -->
     <div class="card">
-        <div class="date-badge-row">
-            <div class="date-input-wrap">
-                <input type="date" id="fechaActual" onchange="cambiarFecha()">
-            </div>
-            <div class="badge-dia-total" id="totalDia">0h 00m</div>
+        <div class="row-header">
+            <span class="label">Registro Diario</span>
+            <span class="dia-badge" id="diaHorasTotal">0h 00m</span>
         </div>
-        
-        <div id="tramosContenedor"></div>
-        
-        <div id="zonaBotonesDiarios">
-            <button class="btn-add" id="btnAñadirTramoElem" onclick="agregarTramoVacio()">+ Añadir Tramo</button>
-            
-            <div class="segmented-control">
-                <button class="segmented-btn" id="segNormal" onclick="setEstadoDia('normal')">Trabajo</button>
-                <button class="segmented-btn" id="segLibre" onclick="setEstadoDia('libre')">Compensado</button>
-                <button class="segmented-btn" id="segVacaciones" onclick="setEstadoDia('vacaciones')">Vacaciones</button>
-                <button class="segmented-btn" id="segAusencia" onclick="setEstadoDia('ausencia')">Falta S004</button>
-            </div>
+
+        <div class="date-control">
+            <input type="date" id="fechaSel" onchange="seleccionarFecha()">
+        </div>
+
+        <div id="tramosLista"></div>
+
+        <button class="btn-add" id="btnAdd" onclick="nuevoTramo()">+ Añadir Tramo</button>
+
+        <div class="actions-grid">
+            <button class="act-btn" id="btnNormal" onclick="setIncidencia('normal')">Trabajo</button>
+            <button class="act-btn" id="btnLibre" onclick="setIncidencia('libre')">Compensado</button>
+            <button class="act-btn" id="btnVac" onclick="setIncidencia('vacaciones')">Vacaciones</button>
+            <button class="act-btn" id="btnAus" onclick="setIncidencia('ausencia')">Falta S004</button>
         </div>
     </div>
 
-    <!-- TERMÓMETRO SEMANAL -->
+    <!-- 3. TERMÓMETRO SEMANAL (OBJETIVO 35H) -->
     <div class="card">
-        <div class="section-title" id="tituloSemana">Termómetro Semanal (Objetivo 35h)</div>
-        
-        <div class="summary-text">
-            <span>Fichado Esta Semana:</span>
-            <strong id="totalSemana">0h 00m</strong>
-        </div>
-        <div class="summary-text">
-            <span>Para cubrir 35h:</span>
-            <strong id="estadoSemana" style="color: var(--accent);">35h 00m restantes</strong>
-        </div>
-        
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
-            <div class="progress-text" id="progressPct">0%</div>
+        <div class="row-header">
+            <span class="label">Semana Actual (Objetivo 35h)</span>
+            <span id="semanaEstadoTxt" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">10h 13m restantes</span>
         </div>
 
-        <div id="desgloseSemanalContenedor" style="margin-top: 12px; border-top: 1px solid var(--card-border); padding-top: 4px;"></div>
+        <div class="progress-bar-wrap">
+            <div class="progress-bar" id="pBar"></div>
+            <div class="progress-txt" id="pTxt">0%</div>
+        </div>
+
+        <div id="semanaDiasDesglose"></div>
     </div>
 
-    <!-- RESUMEN MENSUAL DESPLEGABLE -->
+    <!-- 4. RESUMEN MENSUAL OFICIAL (DESPLEGABLE) -->
     <div class="card">
-        <div class="collapsible-header" id="headerMeses" onclick="toggleSeccion('contenidoMeses', 'headerMeses')">
-            <span>Resumen Mensual Acumulado</span>
-            <span class="collapsible-arrow">▼</span>
-        </div>
-        <div class="collapsible-content" id="contenidoMeses">
-            <table class="tabla-meses">
+        <button class="accordion-btn" onclick="toggleAcc('accMeses', 'arrMeses')">
+            <span class="label">Resumen Mensual Oficial</span>
+            <span class="arrow" id="arrMeses">▼</span>
+        </button>
+        <div class="accordion-content" id="accMeses">
+            <table>
                 <thead>
                     <tr>
                         <th>Mes</th>
-                        <th class="col-right">Fichado</th>
-                        <th class="col-right">Teórico</th>
-                        <th class="col-right">Saldo</th>
+                        <th class="text-r">Fichado</th>
+                        <th class="text-r">Teórico</th>
+                        <th class="text-r">Saldo</th>
                     </tr>
                 </thead>
-                <tbody id="cuerpoTablaMeses"></tbody>
+                <tbody id="tablaMesesBody"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- DETALLE DIARIO DESPLEGABLE -->
+    <!-- 5. DETALLE DIARIO COMPLETO (DESPLEGABLE) -->
     <div class="card">
-        <div class="collapsible-header" id="headerDiario" onclick="toggleSeccion('contenidoDiario', 'headerDiario')">
-            <span>Detalle Diario</span>
-            <span class="collapsible-arrow">▼</span>
-        </div>
-        <div class="collapsible-content" id="contenidoDiario">
-            <div class="history-nav-row">
-                <span id="labelMesHistorial" style="font-weight:700; font-size:0.85rem;">Septiembre 2026</span>
-                <div class="month-navigation">
-                    <button class="nav-btn" onclick="navegarMesHistorial(-1)">&lt;</button>
-                    <button class="nav-btn" onclick="navegarMesHistorial(1)">&gt;</button>
+        <button class="accordion-btn" onclick="toggleAcc('accDiario', 'arrDiario')">
+            <span class="label">Historial Diario 2026</span>
+            <span class="arrow" id="arrDiario">▼</span>
+        </button>
+        <div class="accordion-content" id="accDiario">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">
+                <span id="mesHistorialTxt" style="font-weight:700; font-size:0.85rem;">Septiembre 2026</span>
+                <div>
+                    <button class="act-btn" style="padding:4px 8px;" onclick="cambiarMes(-1)">&lt;</button>
+                    <button class="act-btn" style="padding:4px 8px;" onclick="cambiarMes(1)">&gt;</button>
                 </div>
             </div>
-            <table class="diario-table">
+            <table>
                 <thead>
                     <tr>
                         <th>Día</th>
-                        <th>Fichajes</th>
-                        <th style="text-align: right;">Fichado</th>
-                        <th style="text-align: right;">Teórico</th>
-                        <th style="text-align: right;">Total</th>
+                        <th>Tramos</th>
+                        <th class="text-r">Horas</th>
                     </tr>
                 </thead>
-                <tbody id="cuerpoDiarioHistorial"></tbody>
+                <tbody id="tablaDiarioBody"></tbody>
             </table>
         </div>
-    </div>
-
-    <!-- BACKUP -->
-    <div class="backup-zone">
-        <button class="btn-backup" onclick="mostrarExportar()">📥 Exportar</button>
-        <button class="btn-backup" onclick="mostrarImportar()">📤 Importar</button>
-        <button class="btn-backup" style="color: var(--danger); border-color: rgba(255, 69, 58, 0.3);" onclick="borrarTodoElHistorial()">🗑️ Reiniciar</button>
-    </div>
-
-    <div class="panel-backup" id="panelBackup">
-        <span class="section-title" id="backupTitle">Copia de Seguridad</span>
-        <textarea id="txtBackup"></textarea>
-        <button class="btn-add" id="btnAccionBackup" style="margin-top:10px;">Listo</button>
     </div>
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => { for (let r of regs) r.unregister(); });
-    }
+    // SALDO BASE CONSOLIDADO AL CIERRE DEL 09/09/2026 (EN MINUTOS)
+    // -23h 55m (informe oficial) + 04h 29m (salida 20:15 del 08/09) = -19h 26m (-1166 min)
+    const SALDO_OFICIAL_BASE_MINUTOS = -(19 * 60 + 26);
 
-    const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const nombresDiasCompletos = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-    // BASE DE DATOS EXACTA DÍA POR DÍA DE LAS 10 PÁGINAS DEL INFORME
-    // Cada día incluye sus tramos reales y el teórico oficial que le puso la administración en minutos (t: minutos)
-    const baseDatosExactaOficial = {
-        // ENERO (Teórico: 95h 12m = 5712 min | Fichado: 75h 57m = 4557 min | Saldo: -19:15)
-        "2026-01-02":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-01-05":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-01-07":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-01-08":{"incidencia":"normal","tramos":[{"entrada":"15:51","salida":"19:59"}],"t":336},
-        "2026-01-09":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}],"t":336},
-        "2026-01-12":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:14"}],"t":336},
-        "2026-01-13":{"incidencia":"normal","tramos":[{"entrada":"15:51","salida":"20:13"}],"t":336},
-        "2026-01-14":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:15"}],"t":336},
-        "2026-01-15":{"incidencia":"normal","tramos":[{"entrada":"15:27","salida":"20:08"}],"t":336},
-        "2026-01-16":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}],"t":336},
-        "2026-01-19":{"incidencia":"normal","tramos":[{"entrada":"15:53","salida":"20:00"}],"t":336},
-        "2026-01-20":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:05"}],"t":336},
-        "2026-01-21":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}],"t":336},
-        "2026-01-22":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:13"}],"t":336},
-        "2026-01-23":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:13"}],"t":336},
-        "2026-01-26":{"incidencia":"normal","tramos":[{"entrada":"15:31","salida":"20:15"}],"t":336},
-        "2026-01-27":{"incidencia":"normal","tramos":[{"entrada":"15:33","salida":"20:09"}],"t":336},
-        "2026-01-28":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:01"}],"t":336},
-        "2026-01-29":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}],"t":336},
-        "2026-01-30":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:02"}],"t":336},
-
-        // FEBRERO (Teórico: 112h 00m = 6720 min | Fichado: 117h 05m = 7025 min | Saldo: +05:05)
-        "2026-02-02":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:16"}],"t":336},
-        "2026-02-03":{"incidencia":"normal","tramos":[{"entrada":"15:40","salida":"20:12"}],"t":336},
-        "2026-02-04":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:02"}],"t":336},
-        "2026-02-05":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:58"}],"t":336},
-        "2026-02-06":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:05"}],"t":336},
-        "2026-02-08":{"incidencia":"normal","tramos":[{"entrada":"10:30","salida":"16:14"}],"t":0},
-        "2026-02-09":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:17"}],"t":336},
-        "2026-02-10":{"incidencia":"normal","tramos":[{"entrada":"15:48","salida":"20:14"}],"t":336},
-        "2026-02-11":{"incidencia":"normal","tramos":[{"entrada":"12:10","salida":"14:00"},{"entrada":"15:24","salida":"20:12"}],"t":336},
-        "2026-02-12":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:15"}],"t":336},
-        "2026-02-13":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}],"t":336},
-        "2026-02-16":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:16"}],"t":336},
-        "2026-02-17":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:16"}],"t":336},
-        "2026-02-18":{"incidencia":"normal","tramos":[{"entrada":"15:49","salida":"20:14"}],"t":336},
-        "2026-02-19":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:19"}],"t":336},
-        "2026-02-20":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:15"}],"t":336},
-        "2026-02-21":{"incidencia":"normal","tramos":[{"entrada":"08:21","salida":"14:16"},{"entrada":"15:58","salida":"19:55"}],"t":0},
-        "2026-02-22":{"incidencia":"normal","tramos":[{"entrada":"08:28","salida":"13:15"}],"t":0},
-        "2026-02-23":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:21"}],"t":336},
-        "2026-02-24":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:18"}],"t":336},
-        "2026-02-25":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:16"}],"t":336},
-        "2026-02-26":{"incidencia":"ausencia","tramos":[],"t":336},
-        "2026-02-27":{"incidencia":"normal","tramos":[{"entrada":"15:40","salida":"20:17"}],"t":336},
-        "2026-02-28":{"incidencia":"normal","tramos":[{"entrada":"08:10","salida":"15:03"}],"t":0},
-
-        // MARZO (Teórico: 106h 24m = 6384 min | Fichado: 96h 17m = 5777 min | Saldo: -10:07)
-        "2026-03-02":{"incidencia":"normal","tramos":[{"entrada":"15:31","salida":"20:15"}],"t":336},
-        "2026-03-03":{"incidencia":"normal","tramos":[{"entrada":"15:29","salida":"20:17"}],"t":336},
-        "2026-03-04":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:16"}],"t":336},
-        "2026-03-05":{"incidencia":"normal","tramos":[{"entrada":"15:35","salida":"20:15"}],"t":336},
-        "2026-03-06":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}],"t":336},
-        "2026-03-09":{"incidencia":"normal","tramos":[{"entrada":"15:32","salida":"20:35"}],"t":336},
-        "2026-03-10":{"incidencia":"normal","tramos":[{"entrada":"15:36","salida":"20:12"}],"t":336},
-        "2026-03-11":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}],"t":336},
-        "2026-03-12":{"incidencia":"normal","tramos":[{"entrada":"10:22","salida":"11:16"},{"entrada":"15:36","salida":"20:16"}],"t":336},
-        "2026-03-13":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:16"}],"t":336},
-        "2026-03-14":{"incidencia":"normal","tramos":[{"entrada":"14:29","salida":"19:11"}],"t":0},
-        "2026-03-15":{"incidencia":"normal","tramos":[{"entrada":"08:52","salida":"14:20"},{"entrada":"17:57","salida":"20:34"}],"t":0},
-        "2026-03-16":{"incidencia":"normal","tramos":[{"entrada":"15:26","salida":"20:15"}],"t":336},
-        "2026-03-17":{"incidencia":"normal","tramos":[{"entrada":"15:34","salida":"20:18"}],"t":336},
-        "2026-03-18":{"incidencia":"ausencia","tramos":[],"t":336},
-        "2026-03-20":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:15"}],"t":336},
-        "2026-03-23":{"incidencia":"normal","tramos":[{"entrada":"15:46","salida":"20:09"}],"t":336},
-        "2026-03-24":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:12"}],"t":336},
-        "2026-03-25":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:09"}],"t":336},
-        "2026-03-26":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:10"}],"t":336},
-        "2026-03-27":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:12"}],"t":336},
-        "2026-03-30":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-03-31":{"incidencia":"vacaciones","tramos":[],"t":0},
-
-        // ABRIL (Teórico: 89h 12m = 5352 min | Fichado: 79h 02m = 4742 min | Saldo: -10:10)
-        "2026-04-01":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-04-06":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-04-07":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:14"}],"t":336},
-        "2026-04-08":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:17"}],"t":336},
-        "2026-04-09":{"incidencia":"normal","tramos":[{"entrada":"15:38","salida":"20:13"}],"t":336},
-        "2026-04-10":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:09"}],"t":336},
-        "2026-04-13":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:14"}],"t":336},
-        "2026-04-14":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:16"}],"t":336},
-        "2026-04-15":{"incidencia":"normal","tramos":[{"entrada":"15:48","salida":"20:17"}],"t":336},
-        "2026-04-16":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:18"}],"t":336},
-        "2026-04-17":{"incidencia":"normal","tramos":[{"entrada":"08:00","salida":"13:36"}],"t":336},
-        "2026-04-20":{"incidencia":"normal","tramos":[{"entrada":"15:37","salida":"20:16"}],"t":336},
-        "2026-04-21":{"incidencia":"normal","tramos":[{"entrada":"15:43","salida":"20:18"}],"t":336},
-        "2026-04-22":{"incidencia":"normal","tramos":[{"entrada":"15:33","salida":"20:08"}],"t":336},
-        "2026-04-23":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:43"}],"t":336},
-        "2026-04-24":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:06"}],"t":336},
-        "2026-04-27":{"incidencia":"normal","tramos":[{"entrada":"15:45","salida":"20:19"}],"t":336},
-        "2026-04-28":{"incidencia":"normal","tramos":[{"entrada":"09:35","salida":"10:05"},{"entrada":"15:45","salida":"20:15"}],"t":336},
-        "2026-04-29":{"incidencia":"normal","tramos":[{"entrada":"15:38","salida":"20:10"}],"t":336},
-        "2026-04-30":{"incidencia":"vacaciones","tramos":[],"t":0},
-
-        // MAYO (Teórico: 100h 48m = 6048 min | Fichado: 99h 08m = 5948 min | Saldo: -01:40)
-        "2026-05-05":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-05-06":{"incidencia":"normal","tramos":[{"entrada":"15:38","salida":"20:26"}],"t":336},
-        "2026-05-07":{"incidencia":"normal","tramos":[{"entrada":"15:28","salida":"20:15"}],"t":336},
-        "2026-05-08":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:17"}],"t":336},
-        "2026-05-11":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:19"}],"t":336},
-        "2026-05-12":{"incidencia":"normal","tramos":[{"entrada":"15:38","salida":"20:17"}],"t":336},
-        "2026-05-13":{"incidencia":"normal","tramos":[{"entrada":"15:49","salida":"20:14"}],"t":336},
-        "2026-05-14":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:27"}],"t":336},
-        "2026-05-15":{"incidencia":"normal","tramos":[{"entrada":"15:47","salida":"20:30"}],"t":336},
-        "2026-05-18":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:15"}],"t":336},
-        "2026-05-19":{"incidencia":"normal","tramos":[{"entrada":"15:22","salida":"20:16"}],"t":336},
-        "2026-05-20":{"incidencia":"normal","tramos":[{"entrada":"15:39","salida":"20:10"}],"t":336},
-        "2026-05-21":{"incidencia":"normal","tramos":[{"entrada":"12:31","salida":"14:28"},{"entrada":"15:42","salida":"21:15"}],"t":336},
-        "2026-05-22":{"incidencia":"normal","tramos":[{"entrada":"08:00","salida":"13:30"}],"t":336},
-        "2026-05-25":{"incidencia":"normal","tramos":[{"entrada":"08:00","salida":"13:30"}],"t":336},
-        "2026-05-26":{"incidencia":"normal","tramos":[{"entrada":"08:00","salida":"13:30"}],"t":336},
-        "2026-05-27":{"incidencia":"normal","tramos":[{"entrada":"15:35","salida":"20:14"}],"t":336},
-        "2026-05-28":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:34"}],"t":336},
-        "2026-05-29":{"incidencia":"normal","tramos":[{"entrada":"15:42","salida":"20:34"}],"t":336},
-        "2026-05-30":{"incidencia":"normal","tramos":[{"entrada":"08:31","salida":"18:06"}],"t":0},
-
-        // JUNIO (Teórico: 147h 00m = 8820 min | Fichado: 149h 58m = 8998 min | Saldo: +02:58)
-        "2026-06-01":{"incidencia":"normal","tramos":[{"entrada":"09:08","salida":"11:48"},{"entrada":"15:40","salida":"20:14"}],"t":420},
-        "2026-06-02":{"incidencia":"normal","tramos":[{"entrada":"08:32","salida":"13:20"},{"entrada":"15:40","salida":"20:12"}],"t":420},
-        "2026-06-03":{"incidencia":"normal","tramos":[{"entrada":"15:41","salida":"20:21"}],"t":420},
-        "2026-06-04":{"incidencia":"normal","tramos":[{"entrada":"15:44","salida":"20:32"}],"t":420},
-        "2026-06-05":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-06-06":{"incidencia":"normal","tramos":[{"entrada":"14:34","salida":"21:10"}],"t":0},
-        "2026-06-07":{"incidencia":"normal","tramos":[{"entrada":"14:19","salida":"21:13"}],"t":0},
-        "2026-06-08":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-06-10":{"incidencia":"normal","tramos":[{"entrada":"10:28","salida":"15:07"},{"entrada":"15:23","salida":"17:46"},{"entrada":"18:53","salida":"21:47"}],"t":420},
-        "2026-06-11":{"incidencia":"normal","tramos":[{"entrada":"08:49","salida":"12:03"},{"entrada":"16:23","salida":"21:06"}],"t":420},
-        "2026-06-12":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-06-13":{"incidencia":"normal","tramos":[{"entrada":"14:26","salida":"20:56"}],"t":0},
-        "2026-06-14":{"incidencia":"normal","tramos":[{"entrada":"10:56","salida":"15:48"}],"t":0},
-        "2026-06-15":{"incidencia":"normal","tramos":[{"entrada":"13:58","salida":"19:59"}],"t":420},
-        "2026-06-16":{"incidencia":"normal","tramos":[{"entrada":"10:05","salida":"13:22"},{"entrada":"16:05","salida":"20:03"}],"t":420},
-        "2026-06-17":{"incidencia":"normal","tramos":[{"entrada":"10:15","salida":"12:28"},{"entrada":"15:11","salida":"20:24"}],"t":420},
-        "2026-06-18":{"incidencia":"normal","tramos":[{"entrada":"08:53","salida":"13:46"},{"entrada":"15:01","salida":"19:44"}],"t":420},
-        "2026-06-19":{"incidencia":"normal","tramos":[{"entrada":"14:06","salida":"19:01"}],"t":420},
-        "2026-06-22":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"14:35"},{"entrada":"15:45","salida":"20:52"}],"t":420},
-        "2026-06-23":{"incidencia":"normal","tramos":[{"entrada":"09:57","salida":"13:08"},{"entrada":"16:10","salida":"20:50"}],"t":420},
-        "2026-06-24":{"incidencia":"normal","tramos":[{"entrada":"09:58","salida":"13:11"},{"entrada":"17:40","salida":"21:23"}],"t":420},
-        "2026-06-25":{"incidencia":"normal","tramos":[{"entrada":"10:18","salida":"14:16"},{"entrada":"16:29","salida":"20:33"}],"t":420},
-        "2026-06-26":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-06-27":{"incidencia":"normal","tramos":[{"entrada":"11:02","salida":"19:39"}],"t":0},
-        "2026-06-28":{"incidencia":"normal","tramos":[{"entrada":"10:48","salida":"15:39"}],"t":0},
-        "2026-06-29":{"incidencia":"normal","tramos":[{"entrada":"10:06","salida":"14:39"}],"t":420},
-        "2026-06-30":{"incidencia":"normal","tramos":[{"entrada":"10:37","salida":"14:12"}],"t":420},
-
-        // JULIO (Teórico: 161h 00m = 9660 min | Fichado: 175h 12m = 10512 min | Saldo: +14:12)
-        "2026-07-01":{"incidencia":"normal","tramos":[{"entrada":"10:10","salida":"14:33"},{"entrada":"16:13","salida":"21:06"}],"t":420},
-        "2026-07-02":{"incidencia":"normal","tramos":[{"entrada":"10:48","salida":"14:08"},{"entrada":"15:40","salida":"21:09"}],"t":420},
-        "2026-07-03":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-07-04":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"15:15"}],"t":0},
-        "2026-07-05":{"incidencia":"normal","tramos":[{"entrada":"10:59","salida":"15:17"}],"t":0},
-        "2026-07-06":{"incidencia":"normal","tramos":[{"entrada":"14:55","salida":"19:00"}],"t":420},
-        "2026-07-07":{"incidencia":"normal","tramos":[{"entrada":"09:51","salida":"14:12"}],"t":420},
-        "2026-07-08":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"14:01"},{"entrada":"15:59","salida":"21:08"}],"t":420},
-        "2026-07-09":{"incidencia":"normal","tramos":[{"entrada":"10:17","salida":"14:27"},{"entrada":"18:00","salida":"23:31"}],"t":420},
-        "2026-07-10":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-07-11":{"incidencia":"normal","tramos":[{"entrada":"10:43","salida":"15:33"}],"t":0},
-        "2026-07-12":{"incidencia":"normal","tramos":[{"entrada":"10:58","salida":"15:28"}],"t":0},
-        "2026-07-13":{"incidencia":"normal","tramos":[{"entrada":"10:23","salida":"17:59"}],"t":420},
-        "2026-07-14":{"incidencia":"normal","tramos":[{"entrada":"10:09","salida":"14:18"}],"t":420},
-        "2026-07-15":{"incidencia":"normal","tramos":[{"entrada":"10:35","salida":"14:09"},{"entrada":"15:40","salida":"20:53"}],"t":420},
-        "2026-07-16":{"incidencia":"normal","tramos":[{"entrada":"10:08","salida":"15:00"},{"entrada":"16:09","salida":"21:17"}],"t":420},
-        "2026-07-17":{"incidencia":"normal","tramos":[{"entrada":"14:28","salida":"20:27"}],"t":420},
-        "2026-07-20":{"incidencia":"normal","tramos":[{"entrada":"09:59","salida":"14:22"}],"t":420},
-        "2026-07-21":{"incidencia":"normal","tramos":[{"entrada":"10:30","salida":"14:07"}],"t":420},
-        "2026-07-22":{"incidencia":"normal","tramos":[{"entrada":"10:08","salida":"14:37"},{"entrada":"16:20","salida":"21:56"}],"t":420},
-        "2026-07-23":{"incidencia":"normal","tramos":[{"entrada":"10:21","salida":"14:53"},{"entrada":"15:41","salida":"21:41"}],"t":420},
-        "2026-07-24":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-07-25":{"incidencia":"normal","tramos":[{"entrada":"10:51","salida":"15:29"}],"t":0},
-        "2026-07-26":{"incidencia":"normal","tramos":[{"entrada":"15:13","salida":"20:58"}],"t":0},
-        "2026-07-27":{"incidencia":"normal","tramos":[{"entrada":"10:14","salida":"14:30"}],"t":420},
-        "2026-07-28":{"incidencia":"normal","tramos":[{"entrada":"10:18","salida":"14:33"}],"t":420},
-        "2026-07-29":{"incidencia":"normal","tramos":[{"entrada":"10:02","salida":"14:10"},{"entrada":"15:54","salida":"21:08"}],"t":420},
-        "2026-07-30":{"incidencia":"normal","tramos":[{"entrada":"10:13","salida":"14:21"},{"entrada":"16:53","salida":"21:32"}],"t":420},
-        "2026-07-31":{"incidencia":"normal","tramos":[{"entrada":"11:12","salida":"20:02"}],"t":420},
-
-        // AGOSTO (Teórico: 42h 00m = 2520 min | Fichado: 51h 15m = 3075 min | Saldo: +09:15)
-        "2026-08-03":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-04":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-05":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-06":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-07":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-10":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-11":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-12":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-13":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-14":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-17":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-18":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-19":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-20":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-21":{"incidencia":"vacaciones","tramos":[],"t":0},
-        "2026-08-24":{"incidencia":"normal","tramos":[{"entrada":"11:43","salida":"20:16"}],"t":420},
-        "2026-08-25":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-08-26":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-08-27":{"incidencia":"normal","tramos":[{"entrada":"11:55","salida":"20:15"}],"t":420},
-        "2026-08-28":{"incidencia":"normal","tramos":[{"entrada":"11:37","salida":"19:50"}],"t":420},
-        "2026-08-29":{"incidencia":"normal","tramos":[{"entrada":"10:58","salida":"19:53"}],"t":0},
-        "2026-08-30":{"incidencia":"normal","tramos":[{"entrada":"11:03","salida":"19:56"}],"t":0},
-        "2026-08-31":{"incidencia":"normal","tramos":[{"entrada":"11:49","salida":"20:10"}],"t":420},
-
-        // SEPTIEMBRE (Hasta el 09/09: Teórico 49h = 2940 min | Fichado con 20:15 = 45h 16m = 2716 min | Saldo: -03:44)
-        "2026-09-01":{"incidencia":"normal","tramos":[{"entrada":"11:28","salida":"20:03"}],"t":420},
-        "2026-09-02":{"incidencia":"normal","tramos":[{"entrada":"11:44","salida":"20:02"}],"t":420},
-        "2026-09-03":{"incidencia":"normal","tramos":[{"entrada":"11:40","salida":"20:04"}],"t":420},
-        "2026-09-04":{"incidencia":"ausencia","tramos":[],"t":420},
-        "2026-09-07":{"incidencia":"normal","tramos":[{"entrada":"08:02","salida":"15:00"}],"t":420},
-        // Salida a las 20:15 integrada:
-        "2026-09-08":{"incidencia":"normal","tramos":[{"entrada":"09:45","salida":"13:39"},{"entrada":"15:46","salida":"20:15"}],"t":420},
-        "2026-09-09":{"incidencia":"normal","tramos":[{"entrada":"15:46","salida":"20:30"}],"t":420}
+    // DATOS DE SEPTIEMBRE BASE (Días 1 a 9 oficiales con salida a las 20:15)
+    const datosSeptiembre = {
+        "2026-09-01": { inc: "normal", tramos: [{ e: "11:28", s: "20:03" }] }, // 08:35
+        "2026-09-02": { inc: "normal", tramos: [{ e: "11:44", s: "20:02" }] }, // 08:18
+        "2026-09-03": { inc: "normal", tramos: [{ e: "11:40", s: "20:04" }] }, // 08:24
+        "2026-09-04": { inc: "ausencia", tramos: [] },                          // Falta S004 (-07:00)
+        "2026-09-07": { inc: "normal", tramos: [{ e: "08:02", s: "15:00" }] }, // 06:58
+        "2026-09-08": { inc: "normal", tramos: [{ e: "09:45", s: "13:39" }, { e: "15:46", s: "20:15" }] }, // 08:23
+        "2026-09-09": { inc: "normal", tramos: [{ e: "15:46", s: "20:30" }] }  // 04:44
     };
 
-    const CLAVE_STORAGE = 'jornada_pro_v7_exacta_total';
-
-    function obtenerStorage() {
+    // Almacenamiento independiente nuevo
+    const STORAGE_KEY = "control_jornada_v10_clean";
+    function cargarDB() {
         try {
-            const guardado = localStorage.getItem(CLAVE_STORAGE);
-            if (guardado) {
-                const parsed = JSON.parse(guardado);
-                if (parsed && typeof parsed === 'object') return parsed;
-            }
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) return JSON.parse(raw);
         } catch(e) {}
-        return JSON.parse(JSON.stringify(baseDatosExactaOficial));
+        return JSON.parse(JSON.stringify(datosSeptiembre));
     }
 
-    let baseDatos = obtenerStorage();
+    let db = cargarDB();
+    let fechaActual = "2026-09-10";
+    let mesVerAño = 2026, mesVerMes = 8; // Septiembre
 
-    function parsearFechaLocal(strFecha) {
-        if (!strFecha || typeof strFecha !== 'string') return new Date();
-        const partes = strFecha.split('-').map(Number);
-        if (partes.length < 3 || isNaN(partes[0])) return new Date();
-        return new Date(partes[0], partes[1] - 1, partes[2]);
+    function guardarDB() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch(e) {}
     }
 
-    function formatearFechaISO(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
+    function calcMin(e, s) {
+        if (!e || !s) return 0;
+        const [h1, m1] = e.split(':').map(Number);
+        const [h2, m2] = s.split(':').map(Number);
+        return (h2 * 60 + m2) - (h1 * 60 + m1);
     }
 
-    let fechaActualStr = "2026-09-10";
-    let mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
-
-    function guardarEnStorage() {
-        try {
-            localStorage.setItem(CLAVE_STORAGE, JSON.stringify(baseDatos));
-        } catch(e) {}
+    function calcMinDia(fecha) {
+        const d = db[fecha];
+        if (!d || d.inc !== 'normal' || !d.tramos) return 0;
+        return d.tramos.reduce((acc, t) => acc + calcMin(t.e, t.s), 0);
     }
 
-    function formatearMinutos(minutos, conSigno = false) {
-        const esNegativo = minutos < 0;
-        const absMin = Math.abs(Math.round(minutos));
-        const h = Math.floor(absMin / 60);
-        const m = absMin % 60;
-        const signo = esNegativo ? '-' : (conSigno ? '+' : '');
-        return `${signo}${h}h ${String(m).padStart(2, '0')}m`;
+    function fmtMin(m, signo = false) {
+        const neg = m < 0;
+        const abs = Math.abs(Math.round(m));
+        const h = Math.floor(abs / 60);
+        const min = abs % 60;
+        const s = neg ? '-' : (signo ? '+' : '');
+        return `${s}${h}h ${String(min).padStart(2, '0')}m`;
     }
 
-    function formatearHorasSimples(minutos) {
-        const esNegativo = minutos < 0;
-        const absMin = Math.abs(Math.round(minutos));
-        const h = Math.floor(absMin / 60);
-        const m = absMin % 60;
-        return `${esNegativo ? '-' : ''}${h}:${String(m).padStart(2, '0')}`;
+    function fmtHoras(m) {
+        const neg = m < 0;
+        const abs = Math.abs(Math.round(m));
+        const h = Math.floor(abs / 60);
+        const min = abs % 60;
+        return `${neg ? '-' : ''}${h}:${String(min).padStart(2, '0')}`;
     }
 
-    function calcularMinutosTramo(entrada, salida) {
-        if (!entrada || !salida) return 0;
-        const [h1, m1] = entrada.split(':').map(Number);
-        const [h2, m2] = salida.split(':').map(Number);
-        const total1 = h1 * 60 + m1;
-        const total2 = h2 * 60 + m2;
-        return total2 >= total1 ? total2 - total1 : (total2 + 24 * 60) - total1;
-    }
+    // Render día seleccionado
+    function renderDia() {
+        document.getElementById('fechaSel').value = fechaActual;
+        const d = db[fechaActual] || { inc: 'normal', tramos: [] };
+        
+        ['btnNormal', 'btnLibre', 'btnVac', 'btnAus'].forEach(id => document.getElementById(id).classList.remove('active'));
+        if (d.inc === 'normal') document.getElementById('btnNormal').classList.add('active');
+        if (d.inc === 'libre') document.getElementById('btnLibre').classList.add('active');
+        if (d.inc === 'vacaciones') document.getElementById('btnVac').classList.add('active');
+        if (d.inc === 'ausencia') document.getElementById('btnAus').classList.add('active');
 
-    function calcularMinutosDia(strFecha) {
-        const datos = baseDatos[strFecha];
-        if (!datos || datos.incidencia === 'vacaciones' || datos.incidencia === 'libre' || datos.incidencia === 'ausencia') {
-            return 0;
-        }
-        let total = 0;
-        if (datos.tramos && Array.isArray(datos.tramos)) {
-            datos.tramos.forEach(t => {
-                total += calcularMinutosTramo(t.entrada, t.salida);
+        const lista = document.getElementById('tramosLista');
+        lista.innerHTML = '';
+
+        if (d.inc === 'normal') {
+            document.getElementById('btnAdd').style.display = 'block';
+            (d.tramos || []).forEach((t, i) => {
+                const row = document.createElement('div');
+                row.className = 'tramo';
+                row.innerHTML = `
+                    <input type="time" value="${t.e}" onchange="updTramo(${i}, 'e', this.value)">
+                    <span style="color:var(--muted); font-size:0.8rem;">a</span>
+                    <input type="time" value="${t.s}" onchange="updTramo(${i}, 's', this.value)">
+                    <button class="btn-del" onclick="delTramo(${i})">✕</button>
+                `;
+                lista.appendChild(row);
             });
-        }
-        return total;
-    }
-
-    function obtenerTeoricoDia(strFecha) {
-        const datos = baseDatos[strFecha];
-        if (datos && typeof datos.t === 'number') {
-            return datos.t;
-        }
-        // Para días nuevos introducidos en el futuro (L-V: 7h, Fines de semana: 0h)
-        const d = parsearFechaLocal(strFecha).getDay();
-        if (d === 0 || d === 6) return 0;
-        if (datos && (datos.incidencia === 'vacaciones' || datos.incidencia === 'libre')) return 0;
-        return 7 * 60;
-    }
-
-    function obtenerLunesDeSemana(strFecha) {
-        const d = parsearFechaLocal(strFecha);
-        const dia = d.getDay();
-        const diff = dia === 0 ? -6 : 1 - dia;
-        d.setDate(d.getDate() + diff);
-        return d;
-    }
-
-    function renderizarDiaActual() {
-        const datos = baseDatos[fechaActualStr] || { incidencia: 'normal', tramos: [] };
-        const contenedor = document.getElementById('tramosContenedor');
-        contenedor.innerHTML = '';
-
-        document.getElementById('segNormal').className = `segmented-btn ${datos.incidencia === 'normal' ? 'active' : ''}`;
-        document.getElementById('segLibre').className = `segmented-btn ${datos.incidencia === 'libre' ? 'active' : ''}`;
-        document.getElementById('segVacaciones').className = `segmented-btn ${datos.incidencia === 'vacaciones' ? 'active' : ''}`;
-        document.getElementById('segAusencia').className = `segmented-btn ${datos.incidencia === 'ausencia' ? 'active' : ''}`;
-
-        if (datos.incidencia === 'normal') {
-            if (datos.tramos && datos.tramos.length > 0) {
-                datos.tramos.forEach((t, idx) => {
-                    const row = document.createElement('div');
-                    row.className = 'tramo-row';
-                    row.innerHTML = `
-                        <input type="time" value="${t.entrada || ''}" onchange="actualizarTramo(${idx}, 'entrada', this.value)">
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">a</span>
-                        <input type="time" value="${t.salida || ''}" onchange="actualizarTramo(${idx}, 'salida', this.value)">
-                        <button class="btn-icon" onclick="eliminarTramo(${idx})">✕</button>
-                    `;
-                    contenedor.appendChild(row);
-                });
-            }
-            document.getElementById('btnAñadirTramoElem').style.display = 'block';
         } else {
-            document.getElementById('btnAñadirTramoElem').style.display = 'none';
-            let desc = '';
-            if (datos.incidencia === 'vacaciones') desc = '🌴 Día de Vacaciones';
-            else if (datos.incidencia === 'libre') desc = '💤 Descanso / Compensado';
-            else if (datos.incidencia === 'ausencia') desc = '⚠️ Ausencia S004 (-7:00 en bolsa)';
-            contenedor.innerHTML = `<div style="text-align:center; padding:12px 0; color:var(--text-muted); font-size:0.85rem;">${desc}</div>`;
+            document.getElementById('btnAdd').style.display = 'none';
+            let txt = d.inc === 'vacaciones' ? '🌴 Vacaciones' : (d.inc === 'libre' ? '💤 Compensado' : '⚠️ Falta S004 (-07:00)');
+            lista.innerHTML = `<div style="text-align:center; padding:12px; color:var(--muted); font-size:0.85rem;">${txt}</div>`;
         }
 
-        const minutosDia = calcularMinutosDia(fechaActualStr);
-        document.getElementById('totalDia').textContent = `${formatearMinutos(minutosDia)}`;
+        const totalMin = calcMinDia(fechaActual);
+        document.getElementById('diaHorasTotal').textContent = fmtMin(totalMin);
     }
 
-    function renderizarTermometroSemanal() {
-        const lunes = obtenerLunesDeSemana(fechaActualStr);
-        const contenedor = document.getElementById('desgloseSemanalContenedor');
-        contenedor.innerHTML = '';
+    // Render termómetro de la semana
+    function renderSemana() {
+        const diasSemana = ['Lunes (7)', 'Martes (8)', 'Miércoles (9)', 'Jueves (10)', 'Viernes (11)', 'Sábado (12)', 'Domingo (13)'];
+        const claves = ['2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11', '2026-09-12', '2026-09-13'];
+        
+        let totalSemana = 0;
+        const cont = document.getElementById('semanaDiasDesglose');
+        cont.innerHTML = '';
 
-        let totalMinutosSemana = 0;
-        const OBJETIVO_SEMANAL = 35 * 60;
-
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i);
-            const claveFecha = formatearFechaISO(d);
-            const datos = baseDatos[claveFecha] || { incidencia: 'normal', tramos: [] };
-            const minutosDia = calcularMinutosDia(claveFecha);
-
-            totalMinutosSemana += minutosDia;
-
-            const esSeleccionado = claveFecha === fechaActualStr;
-            const item = document.createElement('div');
-            item.className = 'thermometer-day';
-            item.onclick = () => {
-                document.getElementById('fechaActual').value = claveFecha;
-                cambiarFecha();
-            };
-
-            let tramosTexto = '';
-            if (datos.incidencia === 'vacaciones') tramosTexto = '<span class="badge-incidencia">🌴 Vacaciones</span>';
-            else if (datos.incidencia === 'libre') tramosTexto = '<span class="badge-incidencia">💤 Compensado</span>';
-            else if (datos.incidencia === 'ausencia') tramosTexto = '<span class="badge-incidencia" style="background:rgba(255,69,58,0.25); color:var(--danger)">⚠️ S004</span>';
-            else if (datos.tramos && datos.tramos.length > 0) {
-                tramosTexto = datos.tramos.map(t => `${t.entrada || '--'}-${t.salida || '--'}`).join(', ');
-            } else {
-                tramosTexto = 'Sin actividad';
+        claves.forEach((k, idx) => {
+            const m = calcMinDia(k);
+            totalSemana += m;
+            const d = db[k];
+            let sub = 'Sin actividad';
+            if (d && d.inc === 'normal' && d.tramos && d.tramos.length > 0) {
+                sub = d.tramos.map(t => `${t.e}-${t.s}`).join(', ');
+            } else if (d && d.inc !== 'normal') {
+                sub = d.inc === 'ausencia' ? '⚠️ S004' : (d.inc === 'vacaciones' ? '🌴 Vacaciones' : '💤 Compensado');
             }
 
-            item.innerHTML = `
-                <div class="thermometer-header ${esSeleccionado ? 'current-day-highlight' : ''}">
-                    <span>${nombresDiasCompletos[d.getDay()]} (${d.getDate()})</span>
-                    <span>${formatearMinutos(minutosDia)}</span>
+            const row = document.createElement('div');
+            row.className = 'day-row';
+            row.style.cursor = 'pointer';
+            if (k === fechaActual) row.style.color = 'var(--accent)';
+            row.onclick = () => { fechaActual = k; renderTodo(); };
+            row.innerHTML = `
+                <div>
+                    <div style="font-weight:600;">${diasSemana[idx]}</div>
+                    <div style="font-size:0.75rem; color:var(--muted);">${sub}</div>
                 </div>
-                <div class="thermometer-tramos">${tramosTexto}</div>
+                <div style="font-weight:700;">${fmtMin(m)}</div>
             `;
-            contenedor.appendChild(item);
-        }
-
-        document.getElementById('totalSemana').textContent = formatearMinutos(totalMinutosSemana);
-        const restante = OBJETIVO_SEMANAL - totalMinutosSemana;
-        const elemEstado = document.getElementById('estadoSemana');
-        
-        if (restante <= 0) {
-            elemEstado.style.color = 'var(--success)';
-            elemEstado.textContent = `¡Cubierto! (+${formatearMinutos(Math.abs(restante))})`;
-        } else {
-            elemEstado.style.color = 'var(--accent)';
-            elemEstado.textContent = `${formatearMinutos(restante)} para 35h`;
-        }
-
-        const pct = Math.min(100, Math.round((totalMinutosSemana / OBJETIVO_SEMANAL) * 100));
-        document.getElementById('progressBar').style.width = `${pct}%`;
-        document.getElementById('progressPct').textContent = `${pct}%`;
-    }
-
-    function renderizarResumenMensualYGlobal() {
-        const mesesMap = {};
-
-        // Recorre todos los días reales registrados en la base de datos
-        Object.keys(baseDatos).forEach(k => {
-            const ym = k.substring(0, 7);
-            if (!mesesMap[ym]) mesesMap[ym] = { fichado: 0, teorico: 0 };
-            mesesMap[ym].fichado += calcularMinutosDia(k);
-            mesesMap[ym].teorico += obtenerTeoricoDia(k);
+            cont.appendChild(row);
         });
 
-        const tbody = document.getElementById('cuerpoTablaMeses');
-        tbody.innerHTML = '';
+        const pct = Math.min(100, Math.round((totalSemana / (35 * 60)) * 100));
+        document.getElementById('pBar').style.width = `${pct}%`;
+        document.getElementById('pTxt').textContent = `${pct}% (${fmtMin(totalSemana)} / 35h)`;
 
-        let saldoGlobalMinutos = 0;
-        const mesesOrdenados = Object.keys(mesesMap).sort();
+        const rest = (35 * 60) - totalSemana;
+        const estadoTxt = document.getElementById('semanaEstadoTxt');
+        if (rest <= 0) {
+            estadoTxt.textContent = `¡Cubierto! (+${fmtMin(Math.abs(rest))})`;
+            estadoTxt.style.color = 'var(--success)';
+        } else {
+            estadoTxt.textContent = `${fmtMin(rest)} para 35h`;
+            estadoTxt.style.color = 'var(--accent)';
+        }
+    }
 
-        mesesOrdenados.forEach(ym => {
-            const data = mesesMap[ym];
-            const saldo = data.fichado - data.teorico;
-            saldoGlobalMinutos += saldo;
-
-            const [año, mes] = ym.split('-');
-            const nombreMes = mesesNombres[parseInt(mes, 10) - 1];
-
-            const colorSaldo = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-                <td>${nombreMes} ${año}</td>
-                <td class="col-right">${formatearHorasSimples(data.fichado)}</td>
-                <td class="col-right">${formatearHorasSimples(data.teorico)}</td>
-                <td class="col-right" style="color: ${colorSaldo}; font-weight: 600;">${formatearHorasSimples(saldo)}</td>
-            `;
-            tbody.appendChild(fila);
+    // Render Bolsa Total
+    function renderBolsa() {
+        // La bolsa parte exactamente de -19:26 y suma cualquier minuto fichado del 10/09 en adelante
+        let extraMinutos = 0;
+        Object.keys(db).forEach(k => {
+            if (k >= "2026-09-10") {
+                const fichado = calcMinDia(k);
+                // Si es L-V tiene 7h de exigencia
+                const dt = new Date(k + 'T00:00:00');
+                const diaSem = dt.getDay();
+                let teorico = (diaSem >= 1 && diaSem <= 5) ? (7 * 60) : 0;
+                if (db[k].inc === 'vacaciones' || db[k].inc === 'libre') teorico = 0;
+                extraMinutos += (fichado - teorico);
+            }
         });
 
-        const elemSaldoGlobal = document.getElementById('saldoGlobalTotal');
-        elemSaldoGlobal.textContent = formatearHorasSimples(saldoGlobalMinutos);
-        elemSaldoGlobal.style.color = saldoGlobalMinutos >= 0 ? 'var(--success)' : 'var(--danger)';
+        const saldoFinal = SALDO_OFICIAL_BASE_MINUTOS + extraMinutos;
+        const elem = document.getElementById('totalBolsa');
+        elem.textContent = fmtHoras(saldoFinal);
+        elem.style.color = saldoFinal >= 0 ? 'var(--success)' : 'var(--danger)';
     }
 
-    function renderizarHistorialDiario() {
-        const año = mesHistorialSeleccionado.getFullYear();
-        const mes = mesHistorialSeleccionado.getMonth();
-        const ymStr = `${año}-${String(mes + 1).padStart(2, '0')}`;
-        
-        document.getElementById('labelMesHistorial').textContent = `${mesesNombres[mes]} ${año}`;
-        const tbody = document.getElementById('cuerpoDiarioHistorial');
+    // Meses oficiales
+    function renderMeses() {
+        const meses = [
+            { n: "Enero 2026", f: "75:57", t: "95:12", s: "-19:15" },
+            { n: "Febrero 2026", f: "117:05", t: "112:00", s: "+05:05" },
+            { n: "Marzo 2026", f: "96:17", t: "106:24", s: "-10:07" },
+            { n: "Abril 2026", f: "79:02", t: "89:12", s: "-10:10" },
+            { n: "Mayo 2026", f: "99:08", t: "100:48", s: "-01:40" },
+            { n: "Junio 2026", f: "149:58", t: "147:00", s: "+02:58" },
+            { n: "Julio 2026", f: "175:12", t: "161:00", s: "+14:12" },
+            { n: "Agosto 2026", f: "51:15", t: "42:00", s: "+09:15" },
+            { n: "Septiembre 2026", f: "45:16", t: "49:00", s: "-03:44" }
+        ];
+        const tbody = document.getElementById('tablaMesesBody');
+        tbody.innerHTML = meses.map(m => `
+            <tr>
+                <td>${m.n}</td>
+                <td class="text-r">${m.f}</td>
+                <td class="text-r">${m.t}</td>
+                <td class="text-r" style="color:${m.s.startsWith('+')?'var(--success)':'var(--danger)'}; font-weight:600;">${m.s}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Historial diario simple
+    function renderHistorial() {
+        const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        document.getElementById('mesHistorialTxt').textContent = `${nombresMeses[mesVerMes]} ${mesVerAño}`;
+        const tbody = document.getElementById('tablaDiarioBody');
         tbody.innerHTML = '';
 
-        const totalDiasEnMes = new Date(año, mes + 1, 0).getDate();
-
-        // En septiembre solo llega hasta el último con registro (9 de sept)
-        let maxDiaAMostrar = totalDiasEnMes;
-        if (año === 2026 && mes === 8) {
-            let ultimoConDatos = 9;
-            Object.keys(baseDatos).forEach(k => {
-                if (k.startsWith("2026-09")) {
-                    const diaNum = parseInt(k.split('-')[2], 10);
-                    if (diaNum > ultimoConDatos) ultimoConDatos = diaNum;
-                }
-            });
-            maxDiaAMostrar = ultimoConDatos;
-        }
-
-        for (let dia = 1; dia <= maxDiaAMostrar; dia++) {
-            const fechaStr = `${ymStr}-${String(dia).padStart(2, '0')}`;
-            const datos = baseDatos[fechaStr];
-            const d = parsearFechaLocal(fechaStr);
-            const diaSem = nombresDias[d.getDay()];
-
-            if (!datos && (d.getDay() === 0 || d.getDay() === 6)) {
-                continue; // Saltar fines de semana sin actividad en meses anteriores
-            }
-
-            const minutosDia = calcularMinutosDia(fechaStr);
-            const teoricoDia = obtenerTeoricoDia(fechaStr);
-            const saldo = minutosDia - teoricoDia;
-
-            let descFichajes = '-';
-            if (datos) {
-                if (datos.incidencia === 'vacaciones') descFichajes = 'Vacaciones';
-                else if (datos.incidencia === 'libre') descFichajes = 'Compensado';
-                else if (datos.incidencia === 'ausencia') descFichajes = 'Ausencia S004';
-                else if (datos.tramos && datos.tramos.length > 0) {
-                    descFichajes = datos.tramos.map(t => `${t.entrada || '--'}-${t.salida || '--'}`).join(', ');
-                }
-            }
-
-            const fila = document.createElement('tr');
-            const colorSaldo = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
-            fila.innerHTML = `
-                <td><strong>${dia}</strong> <span style="color:var(--text-muted); font-size:0.75rem;">${diaSem}</span></td>
-                <td><span class="txt-fichajes-diarios">${descFichajes}</span></td>
-                <td class="col-right">${formatearHorasSimples(minutosDia)}</td>
-                <td class="col-right">${formatearHorasSimples(teoricoDia)}</td>
-                <td class="col-right" style="color:${colorSaldo}; font-weight:600;">${formatearHorasSimples(saldo)}</td>
-            `;
-            tbody.appendChild(fila);
-        }
-    }
-
-    function toggleSeccion(idContenido, idHeader) {
-        const cont = document.getElementById(idContenido);
-        const head = document.getElementById(idHeader);
-        cont.classList.toggle('open');
-        head.classList.toggle('open');
-    }
-
-    function actualizarInterfazCompleta() {
-        renderizarDiaActual();
-        renderizarTermometroSemanal();
-        renderizarResumenMensualYGlobal();
-        renderizarHistorialDiario();
-    }
-
-    function cambiarFecha() {
-        const val = document.getElementById('fechaActual').value;
-        if (val) {
-            fechaActualStr = val;
-            mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function agregarTramoVacio() {
-        if (!baseDatos[fechaActualStr]) {
-            baseDatos[fechaActualStr] = { incidencia: 'normal', tramos: [], t: (parsearFechaLocal(fechaActualStr).getDay() === 0 || parsearFechaLocal(fechaActualStr).getDay() === 6) ? 0 : 420 };
-        }
-        if (!baseDatos[fechaActualStr].tramos) {
-            baseDatos[fechaActualStr].tramos = [];
-        }
-        baseDatos[fechaActualStr].tramos.push({ entrada: '15:45', salida: '20:15' });
-        guardarEnStorage();
-        actualizarInterfazCompleta();
-    }
-
-    function actualizarTramo(idx, campo, valor) {
-        if (baseDatos[fechaActualStr] && baseDatos[fechaActualStr].tramos && baseDatos[fechaActualStr].tramos[idx]) {
-            baseDatos[fechaActualStr].tramos[idx][campo] = valor;
-            guardarEnStorage();
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function eliminarTramo(idx) {
-        if (baseDatos[fechaActualStr] && baseDatos[fechaActualStr].tramos) {
-            baseDatos[fechaActualStr].tramos.splice(idx, 1);
-            guardarEnStorage();
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function setEstadoDia(tipo) {
-        if (!baseDatos[fechaActualStr]) {
-            baseDatos[fechaActualStr] = { incidencia: tipo, tramos: [], t: 0 };
+        if (mesVerAño === 2026 && mesVerMes === 8) {
+            // Mostrar los días registrados de septiembre
+            const keys = Object.keys(db).filter(k => k.startsWith('2026-09')).sort();
+            tbody.innerHTML = keys.map(k => {
+                const dia = parseInt(k.split('-')[2], 10);
+                const d = db[k];
+                let desc = '-';
+                if (d.inc === 'normal' && d.tramos && d.tramos.length > 0) desc = d.tramos.map(t=>`${t.e}-${t.s}`).join(', ');
+                else if (d.inc === 'ausencia') desc = 'Ausencia S004';
+                else if (d.inc === 'vacaciones') desc = 'Vacaciones';
+                else if (d.inc === 'libre') desc = 'Compensado';
+                return `
+                    <tr>
+                        <td><strong>${dia}</strong></td>
+                        <td style="font-size:0.75rem; color:var(--muted);">${desc}</td>
+                        <td class="text-r" style="font-weight:600;">${fmtMin(calcMinDia(k))}</td>
+                    </tr>
+                `;
+            }).join('');
         } else {
-            baseDatos[fechaActualStr].incidencia = tipo;
-            if (tipo === 'ausencia') baseDatos[fechaActualStr].t = 420;
-            else if (tipo === 'vacaciones' || tipo === 'libre') baseDatos[fechaActualStr].t = 0;
-        }
-        guardarEnStorage();
-        actualizarInterfazCompleta();
-    }
-
-    function navegarMesHistorial(delta) {
-        mesHistorialSeleccionado = new Date(mesHistorialSeleccionado.getFullYear(), mesHistorialSeleccionado.getMonth() + delta, 1);
-        renderizarHistorialDiario();
-    }
-
-    function mostrarExportar() {
-        const panel = document.getElementById('panelBackup');
-        const txt = document.getElementById('txtBackup');
-        const btn = document.getElementById('btnAccionBackup');
-        const tit = document.getElementById('backupTitle');
-
-        panel.style.display = 'block';
-        tit.textContent = 'Exportar Copia de Seguridad';
-        txt.value = JSON.stringify(baseDatos);
-        btn.textContent = 'Copiar al Portapapeles';
-        btn.onclick = () => {
-            txt.select();
-            navigator.clipboard.writeText(txt.value);
-            alert('¡Datos copiados al portapapeles!');
-        };
-    }
-
-    function mostrarImportar() {
-        const panel = document.getElementById('panelBackup');
-        const txt = document.getElementById('txtBackup');
-        const btn = document.getElementById('btnAccionBackup');
-        const tit = document.getElementById('backupTitle');
-
-        panel.style.display = 'block';
-        tit.textContent = 'Importar Copia de Seguridad';
-        txt.value = '';
-        btn.textContent = 'Restaurar Datos';
-        btn.onclick = () => {
-            try {
-                const parsed = JSON.parse(txt.value);
-                if (parsed && typeof parsed === 'object') {
-                    baseDatos = parsed;
-                    guardarEnStorage();
-                    actualizarInterfazCompleta();
-                    panel.style.display = 'none';
-                    alert('Datos importados correctamente.');
-                }
-            } catch (e) {
-                alert('El formato JSON no es válido.');
-            }
-        };
-    }
-
-    function borrarTodoElHistorial() {
-        if (confirm('¿Deseas reiniciar la app con los datos oficiales exactos de todo 2026?')) {
-            baseDatos = JSON.parse(JSON.stringify(baseDatosExactaOficial));
-            guardarEnStorage();
-            actualizarInterfazCompleta();
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--muted); padding:10px;">Mes cerrado en informe oficial</td></tr>`;
         }
     }
 
-    function iniciarApp() {
-        const inputFecha = document.getElementById('fechaActual');
-        if (inputFecha) {
-            inputFecha.value = fechaActualStr;
-            actualizarInterfazCompleta();
+    function toggleAcc(idContent, idArr) {
+        const el = document.getElementById(idContent);
+        const arr = document.getElementById(idArr);
+        el.classList.toggle('open');
+        arr.classList.toggle('open');
+    }
+
+    function seleccionarFecha() {
+        fechaActual = document.getElementById('fechaSel').value;
+        renderTodo();
+    }
+
+    function nuevoTramo() {
+        if (!db[fechaActual]) db[fechaActual] = { inc: 'normal', tramos: [] };
+        if (!db[fechaActual].tramos) db[fechaActual].tramos = [];
+        db[fechaActual].tramos.push({ e: "15:45", s: "20:15" });
+        guardarDB();
+        renderTodo();
+    }
+
+    function updTramo(idx, campo, val) {
+        if (db[fechaActual] && db[fechaActual].tramos && db[fechaActual].tramos[idx]) {
+            db[fechaActual].tramos[idx][campo] = val;
+            guardarDB();
+            renderTodo();
         }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciarApp);
-    } else {
-        iniciarApp();
+    function delTramo(idx) {
+        if (db[fechaActual] && db[fechaActual].tramos) {
+            db[fechaActual].tramos.splice(idx, 1);
+            guardarDB();
+            renderTodo();
+        }
     }
+
+    function setIncidencia(tipo) {
+        if (!db[fechaActual]) db[fechaActual] = { inc: tipo, tramos: [] };
+        else db[fechaActual].inc = tipo;
+        guardarDB();
+        renderTodo();
+    }
+
+    function cambiarMes(delta) {
+        mesVerMes += delta;
+        if (mesVerMes < 0) { mesVerMes = 11; mesVerAño--; }
+        if (mesVerMes > 11) { mesVerMes = 0; mesVerAño++; }
+        renderHistorial();
+    }
+
+    function renderTodo() {
+        renderDia();
+        renderSemana();
+        renderBolsa();
+        renderMeses();
+        renderHistorial();
+    }
+
+    document.addEventListener('DOMContentLoaded', renderTodo);
 </script>
 </body>
 </html>
