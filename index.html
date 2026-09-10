@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Control de Jornada Pro</title>
     
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -123,7 +126,7 @@
         .thermometer-header { display: flex; justify-content: space-between; font-weight: 500; font-size: 0.88rem; }
         .thermometer-tramos { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
 
-        /* COLLAPSIBLE ACCORDION HEADERS */
+        /* ACCORDIONS / DESPLEGABLES */
         .collapsible-header {
             display: flex; justify-content: space-between; align-items: center;
             cursor: pointer; padding: 4px 0; font-weight: 700; font-size: 0.85rem;
@@ -279,12 +282,23 @@
 </div>
 
 <script>
+    // AUTO-PURGA DE CACHÉ Y SERVICE WORKERS ANTIGUOS
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+            for (let r of regs) r.unregister();
+        });
+    }
+    if ('caches' in window) {
+        caches.keys().then(names => {
+            for (let name of names) caches.delete(name);
+        });
+    }
+
     const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const nombresDiasCompletos = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    // 1. MESES OFICIALES CONSOLIDADOS DEL AYUNTAMIENTO (Inmutables de Enero a Agosto)
-    // Coinciden exactamente con tu informe SALDO TOTAL - WEB
+    // 1. MESES OFICIALES INMUTABLES (Enero a Agosto)
     const mesesOficialesCerrados = {
         "2026-01": { fichado: 75 * 60 + 57,  teorico: 95 * 60 + 12 },  // -19:15
         "2026-02": { fichado: 117 * 60 + 5,  teorico: 112 * 60 + 0 },  // +05:05
@@ -296,7 +310,7 @@
         "2026-08": { fichado: 51 * 60 + 15,  teorico: 42 * 60 + 0 }    // +09:15
     };
 
-    // 2. BASE DE DATOS DIARIA (Septiembre en adelante dinámico, con salida 08/09 a las 20:15)
+    // 2. SEPTIEMBRE DINÁMICO (Con salida 08/09 a las 20:15)
     const baseDatosInicialDinamica = {
         "2026-09-01":{"incidencia":"normal","tramos":[{"entrada":"11:28","salida":"20:03"}]},
         "2026-09-02":{"incidencia":"normal","tramos":[{"entrada":"11:44","salida":"20:02"}]},
@@ -309,7 +323,7 @@
 
     function obtenerStorage() {
         try {
-            const guardado = localStorage.getItem('jornada_pro_db_v3');
+            const guardado = localStorage.getItem('jornada_pro_v4');
             if (guardado) {
                 const parsed = JSON.parse(guardado);
                 if (parsed && typeof parsed === 'object') return parsed;
@@ -334,12 +348,12 @@
         return `${y}-${m}-${d}`;
     }
 
-    let fechaActualStr = "2026-09-10"; // Fecha fijada al día de hoy
+    let fechaActualStr = "2026-09-10";
     let mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
 
     function guardarEnStorage() {
         try {
-            localStorage.setItem('jornada_pro_db_v3', JSON.stringify(baseDatos));
+            localStorage.setItem('jornada_pro_v4', JSON.stringify(baseDatos));
         } catch(e) {}
     }
 
@@ -395,21 +409,11 @@
         const diaSemana = date.getDay();
         const datos = baseDatos[strFecha];
 
-        // Si es fin de semana, teórico 0
         if (diaSemana === 0 || diaSemana === 6) return 0;
+        if (!tieneDatosDia(strFecha)) return 0;
+        if (datos && (datos.incidencia === 'vacaciones' || datos.incidencia === 'libre')) return 0;
 
-        // Si no tiene registros y es hoy o posterior, aún no devenga teórico
-        if (!tieneDatosDia(strFecha)) {
-            return 0;
-        }
-
-        // Vacaciones o descansos compensados pactados no restan horas a la bolsa
-        if (datos && (datos.incidencia === 'vacaciones' || datos.incidencia === 'libre')) {
-            return 0;
-        }
-
-        // De lunes a viernes con trabajo o con falta S004:
-        return 7 * 60; // 7h diarias en jornada de 35h
+        return 7 * 60; // 7h diarias en L-V
     }
 
     function obtenerLunesDeSemana(strFecha) {
@@ -455,7 +459,7 @@
         }
 
         const minutosDia = calcularMinutosDia(fechaActualStr);
-        document.getElementById('totalDia').textContent = `Total: ${formatearMinutos(minutosDia)}`;
+        document.getElementById('totalDia').textContent = `${formatearMinutos(minutosDia)}`;
     }
 
     function renderizarTermometroSemanal() {
@@ -464,7 +468,7 @@
         contenedor.innerHTML = '';
 
         let totalMinutosSemana = 0;
-        const OBJETIVO_SEMANAL = 35 * 60; // 35 Horas
+        const OBJETIVO_SEMANAL = 35 * 60;
 
         for (let i = 0; i < 7; i++) {
             const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i);
@@ -522,7 +526,6 @@
     function renderizarResumenMensualYGlobal() {
         const mesesMap = JSON.parse(JSON.stringify(mesesOficialesCerrados));
 
-        // Calcular septiembre dinámicamente según lo fichado
         mesesMap["2026-09"] = { fichado: 0, teorico: 0 };
         Object.keys(baseDatos).forEach(k => {
             if (k.startsWith("2026-09")) {
@@ -561,7 +564,6 @@
         elemSaldoGlobal.style.color = saldoGlobalMinutos >= 0 ? 'var(--success)' : 'var(--danger)';
     }
 
-    // DETALLE DIARIO: Solo muestra hasta el último día registrado en el mes actual
     function renderizarHistorialDiario() {
         const año = mesHistorialSeleccionado.getFullYear();
         const mes = mesHistorialSeleccionado.getMonth();
@@ -573,16 +575,14 @@
 
         const totalDiasEnMes = new Date(año, mes + 1, 0).getDate();
 
-        // Encontrar el último día fichado en el mes
         let maxDiaAMostrar = totalDiasEnMes;
-        const hoy = new Date();
-        if (año === hoy.getFullYear() && mes === hoy.getMonth()) {
+        if (año === 2026 && mes === 8) { // Septiembre 2026
             let ultimoConDatos = 0;
             for (let d = 1; d <= totalDiasEnMes; d++) {
                 const fs = `${ymStr}-${String(d).padStart(2, '0')}`;
                 if (tieneDatosDia(fs)) ultimoConDatos = d;
             }
-            maxDiaAMostrar = Math.max(ultimoConDatos, hoy.getDate());
+            maxDiaAMostrar = Math.max(ultimoConDatos, 10);
         }
 
         for (let dia = 1; dia <= maxDiaAMostrar; dia++) {
