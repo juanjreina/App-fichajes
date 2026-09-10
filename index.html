@@ -8,9 +8,6 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#090a0f">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5988/5988246.png">
 
@@ -282,23 +279,17 @@
 </div>
 
 <script>
-    // AUTO-PURGA DE CACHÉ Y SERVICE WORKERS ANTIGUOS
+    // Limpieza forzada de cachés antiguas de versiones anteriores
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-            for (let r of regs) r.unregister();
-        });
-    }
-    if ('caches' in window) {
-        caches.keys().then(names => {
-            for (let name of names) caches.delete(name);
-        });
+        navigator.serviceWorker.getRegistrations().then(regs => { for (let r of regs) r.unregister(); });
     }
 
     const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     const nombresDiasCompletos = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    // 1. MESES OFICIALES INMUTABLES (Enero a Agosto)
+    // 1. MESES OFICIALES INMUTABLES (Enero a Agosto según informe oficial de la administración)
+    // Sumatorio neto oficial exacto = -15h 42m
     const mesesOficialesCerrados = {
         "2026-01": { fichado: 75 * 60 + 57,  teorico: 95 * 60 + 12 },  // -19:15
         "2026-02": { fichado: 117 * 60 + 5,  teorico: 112 * 60 + 0 },  // +05:05
@@ -310,7 +301,7 @@
         "2026-08": { fichado: 51 * 60 + 15,  teorico: 42 * 60 + 0 }    // +09:15
     };
 
-    // 2. SEPTIEMBRE DINÁMICO (Con salida 08/09 a las 20:15)
+    // 2. SEPTIEMBRE DINÁMICO (Con la salida de las 20:15 del 08/09 incluida)
     const baseDatosInicialDinamica = {
         "2026-09-01":{"incidencia":"normal","tramos":[{"entrada":"11:28","salida":"20:03"}]},
         "2026-09-02":{"incidencia":"normal","tramos":[{"entrada":"11:44","salida":"20:02"}]},
@@ -321,9 +312,11 @@
         "2026-09-09":{"incidencia":"normal","tramos":[{"entrada":"15:46","salida":"20:30"}]}
     };
 
+    const CLAVE_STORAGE = 'jornada_pro_v5_exacta';
+
     function obtenerStorage() {
         try {
-            const guardado = localStorage.getItem('jornada_pro_v4');
+            const guardado = localStorage.getItem(CLAVE_STORAGE);
             if (guardado) {
                 const parsed = JSON.parse(guardado);
                 if (parsed && typeof parsed === 'object') return parsed;
@@ -348,12 +341,13 @@
         return `${y}-${m}-${d}`;
     }
 
+    // Fecha fijada en hoy
     let fechaActualStr = "2026-09-10";
     let mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
 
     function guardarEnStorage() {
         try {
-            localStorage.setItem('jornada_pro_v4', JSON.stringify(baseDatos));
+            localStorage.setItem(CLAVE_STORAGE, JSON.stringify(baseDatos));
         } catch(e) {}
     }
 
@@ -404,348 +398,6 @@
         return total;
     }
 
+    // Teórico oficial idéntico al del ayuntamiento
     function obtenerTeoricoDia(strFecha) {
-        const date = parsearFechaLocal(strFecha);
-        const diaSemana = date.getDay();
-        const datos = baseDatos[strFecha];
-
-        if (diaSemana === 0 || diaSemana === 6) return 0;
-        if (!tieneDatosDia(strFecha)) return 0;
-        if (datos && (datos.incidencia === 'vacaciones' || datos.incidencia === 'libre')) return 0;
-
-        return 7 * 60; // 7h diarias en L-V
-    }
-
-    function obtenerLunesDeSemana(strFecha) {
-        const d = parsearFechaLocal(strFecha);
-        const dia = d.getDay();
-        const diff = dia === 0 ? -6 : 1 - dia;
-        d.setDate(d.getDate() + diff);
-        return d;
-    }
-
-    function renderizarDiaActual() {
-        const datos = baseDatos[fechaActualStr] || { incidencia: 'normal', tramos: [] };
-        const contenedor = document.getElementById('tramosContenedor');
-        contenedor.innerHTML = '';
-
-        document.getElementById('segNormal').className = `segmented-btn ${datos.incidencia === 'normal' ? 'active' : ''}`;
-        document.getElementById('segLibre').className = `segmented-btn ${datos.incidencia === 'libre' ? 'active' : ''}`;
-        document.getElementById('segVacaciones').className = `segmented-btn ${datos.incidencia === 'vacaciones' ? 'active' : ''}`;
-        document.getElementById('segAusencia').className = `segmented-btn ${datos.incidencia === 'ausencia' ? 'active' : ''}`;
-
-        if (datos.incidencia === 'normal') {
-            if (datos.tramos && datos.tramos.length > 0) {
-                datos.tramos.forEach((t, idx) => {
-                    const row = document.createElement('div');
-                    row.className = 'tramo-row';
-                    row.innerHTML = `
-                        <input type="time" value="${t.entrada || ''}" onchange="actualizarTramo(${idx}, 'entrada', this.value)">
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">a</span>
-                        <input type="time" value="${t.salida || ''}" onchange="actualizarTramo(${idx}, 'salida', this.value)">
-                        <button class="btn-icon" onclick="eliminarTramo(${idx})">✕</button>
-                    `;
-                    contenedor.appendChild(row);
-                });
-            }
-            document.getElementById('btnAñadirTramoElem').style.display = 'block';
-        } else {
-            document.getElementById('btnAñadirTramoElem').style.display = 'none';
-            let desc = '';
-            if (datos.incidencia === 'vacaciones') desc = '🌴 Día de Vacaciones';
-            else if (datos.incidencia === 'libre') desc = '💤 Descanso / Compensación pactada';
-            else if (datos.incidencia === 'ausencia') desc = '⚠️ Ausencia S004 (-7:00 en bolsa)';
-            contenedor.innerHTML = `<div style="text-align:center; padding:12px 0; color:var(--text-muted); font-size:0.85rem;">${desc}</div>`;
-        }
-
-        const minutosDia = calcularMinutosDia(fechaActualStr);
-        document.getElementById('totalDia').textContent = `${formatearMinutos(minutosDia)}`;
-    }
-
-    function renderizarTermometroSemanal() {
-        const lunes = obtenerLunesDeSemana(fechaActualStr);
-        const contenedor = document.getElementById('desgloseSemanalContenedor');
-        contenedor.innerHTML = '';
-
-        let totalMinutosSemana = 0;
-        const OBJETIVO_SEMANAL = 35 * 60;
-
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + i);
-            const claveFecha = formatearFechaISO(d);
-            const datos = baseDatos[claveFecha] || { incidencia: 'normal', tramos: [] };
-            const minutosDia = calcularMinutosDia(claveFecha);
-
-            totalMinutosSemana += minutosDia;
-
-            const esSeleccionado = claveFecha === fechaActualStr;
-            const item = document.createElement('div');
-            item.className = 'thermometer-day';
-            item.onclick = () => {
-                document.getElementById('fechaActual').value = claveFecha;
-                cambiarFecha();
-            };
-
-            let tramosTexto = '';
-            if (datos.incidencia === 'vacaciones') tramosTexto = '<span class="badge-incidencia">🌴 Vacaciones</span>';
-            else if (datos.incidencia === 'libre') tramosTexto = '<span class="badge-incidencia">💤 Compensado</span>';
-            else if (datos.incidencia === 'ausencia') tramosTexto = '<span class="badge-incidencia" style="background:rgba(255,69,58,0.25); color:var(--danger)">⚠️ S004</span>';
-            else if (datos.tramos && datos.tramos.length > 0) {
-                tramosTexto = datos.tramos.map(t => `${t.entrada || '--'}-${t.salida || '--'}`).join(', ');
-            } else {
-                tramosTexto = 'Sin actividad';
-            }
-
-            item.innerHTML = `
-                <div class="thermometer-header ${esSeleccionado ? 'current-day-highlight' : ''}">
-                    <span>${nombresDiasCompletos[d.getDay()]} (${d.getDate()})</span>
-                    <span>${formatearMinutos(minutosDia)}</span>
-                </div>
-                <div class="thermometer-tramos">${tramosTexto}</div>
-            `;
-            contenedor.appendChild(item);
-        }
-
-        document.getElementById('totalSemana').textContent = formatearMinutos(totalMinutosSemana);
-        const restante = OBJETIVO_SEMANAL - totalMinutosSemana;
-        const elemEstado = document.getElementById('estadoSemana');
-        
-        if (restante <= 0) {
-            elemEstado.style.color = 'var(--success)';
-            elemEstado.textContent = `¡Cubierto! (+${formatearMinutos(Math.abs(restante))})`;
-        } else {
-            elemEstado.style.color = 'var(--accent)';
-            elemEstado.textContent = `${formatearMinutos(restante)} para 35h`;
-        }
-
-        const pct = Math.min(100, Math.round((totalMinutosSemana / OBJETIVO_SEMANAL) * 100));
-        document.getElementById('progressBar').style.width = `${pct}%`;
-        document.getElementById('progressPct').textContent = `${pct}%`;
-    }
-
-    function renderizarResumenMensualYGlobal() {
-        const mesesMap = JSON.parse(JSON.stringify(mesesOficialesCerrados));
-
-        mesesMap["2026-09"] = { fichado: 0, teorico: 0 };
-        Object.keys(baseDatos).forEach(k => {
-            if (k.startsWith("2026-09")) {
-                mesesMap["2026-09"].fichado += calcularMinutosDia(k);
-                mesesMap["2026-09"].teorico += obtenerTeoricoDia(k);
-            }
-        });
-
-        const tbody = document.getElementById('cuerpoTablaMeses');
-        tbody.innerHTML = '';
-
-        let saldoGlobalMinutos = 0;
-        const mesesOrdenados = Object.keys(mesesMap).sort();
-
-        mesesOrdenados.forEach(ym => {
-            const data = mesesMap[ym];
-            const saldo = data.fichado - data.teorico;
-            saldoGlobalMinutos += saldo;
-
-            const [año, mes] = ym.split('-');
-            const nombreMes = mesesNombres[parseInt(mes, 10) - 1];
-
-            const colorSaldo = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-                <td>${nombreMes} ${año}</td>
-                <td class="col-right">${formatearHorasSimples(data.fichado)}</td>
-                <td class="col-right">${formatearHorasSimples(data.teorico)}</td>
-                <td class="col-right" style="color: ${colorSaldo}; font-weight: 600;">${formatearHorasSimples(saldo)}</td>
-            `;
-            tbody.appendChild(fila);
-        });
-
-        const elemSaldoGlobal = document.getElementById('saldoGlobalTotal');
-        elemSaldoGlobal.textContent = formatearHorasSimples(saldoGlobalMinutos);
-        elemSaldoGlobal.style.color = saldoGlobalMinutos >= 0 ? 'var(--success)' : 'var(--danger)';
-    }
-
-    function renderizarHistorialDiario() {
-        const año = mesHistorialSeleccionado.getFullYear();
-        const mes = mesHistorialSeleccionado.getMonth();
-        const ymStr = `${año}-${String(mes + 1).padStart(2, '0')}`;
-        
-        document.getElementById('labelMesHistorial').textContent = `${mesesNombres[mes]} ${año}`;
-        const tbody = document.getElementById('cuerpoDiarioHistorial');
-        tbody.innerHTML = '';
-
-        const totalDiasEnMes = new Date(año, mes + 1, 0).getDate();
-
-        let maxDiaAMostrar = totalDiasEnMes;
-        if (año === 2026 && mes === 8) { // Septiembre 2026
-            let ultimoConDatos = 0;
-            for (let d = 1; d <= totalDiasEnMes; d++) {
-                const fs = `${ymStr}-${String(d).padStart(2, '0')}`;
-                if (tieneDatosDia(fs)) ultimoConDatos = d;
-            }
-            maxDiaAMostrar = Math.max(ultimoConDatos, 10);
-        }
-
-        for (let dia = 1; dia <= maxDiaAMostrar; dia++) {
-            const fechaStr = `${ymStr}-${String(dia).padStart(2, '0')}`;
-            const datos = baseDatos[fechaStr] || { incidencia: 'normal', tramos: [] };
-            const d = parsearFechaLocal(fechaStr);
-            const diaSem = nombresDias[d.getDay()];
-
-            const minutosDia = calcularMinutosDia(fechaStr);
-            const teoricoDia = obtenerTeoricoDia(fechaStr);
-            const saldo = minutosDia - teoricoDia;
-
-            let descFichajes = '-';
-            if (datos.incidencia === 'vacaciones') descFichajes = 'Vacaciones';
-            else if (datos.incidencia === 'libre') descFichajes = 'Compensado';
-            else if (datos.incidencia === 'ausencia') descFichajes = 'Ausencia S004';
-            else if (datos.tramos && datos.tramos.length > 0) {
-                descFichajes = datos.tramos.map(t => `${t.entrada || '--'}-${t.salida || '--'}`).join(', ');
-            }
-
-            const fila = document.createElement('tr');
-            const colorSaldo = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
-            fila.innerHTML = `
-                <td><strong>${dia}</strong> <span style="color:var(--text-muted); font-size:0.75rem;">${diaSem}</span></td>
-                <td><span class="txt-fichajes-diarios">${descFichajes}</span></td>
-                <td class="col-right">${formatearHorasSimples(minutosDia)}</td>
-                <td class="col-right">${formatearHorasSimples(teoricoDia)}</td>
-                <td class="col-right" style="color:${colorSaldo}; font-weight:600;">${formatearHorasSimples(saldo)}</td>
-            `;
-            tbody.appendChild(fila);
-        }
-    }
-
-    function toggleSeccion(idContenido, idHeader) {
-        const cont = document.getElementById(idContenido);
-        const head = document.getElementById(idHeader);
-        cont.classList.toggle('open');
-        head.classList.toggle('open');
-    }
-
-    function actualizarInterfazCompleta() {
-        renderizarDiaActual();
-        renderizarTermometroSemanal();
-        renderizarResumenMensualYGlobal();
-        renderizarHistorialDiario();
-    }
-
-    function cambiarFecha() {
-        const val = document.getElementById('fechaActual').value;
-        if (val) {
-            fechaActualStr = val;
-            mesHistorialSeleccionado = parsearFechaLocal(fechaActualStr);
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function agregarTramoVacio() {
-        if (!baseDatos[fechaActualStr]) {
-            baseDatos[fechaActualStr] = { incidencia: 'normal', tramos: [] };
-        }
-        if (!baseDatos[fechaActualStr].tramos) {
-            baseDatos[fechaActualStr].tramos = [];
-        }
-        baseDatos[fechaActualStr].tramos.push({ entrada: '15:45', salida: '20:15' });
-        guardarEnStorage();
-        actualizarInterfazCompleta();
-    }
-
-    function actualizarTramo(idx, campo, valor) {
-        if (baseDatos[fechaActualStr] && baseDatos[fechaActualStr].tramos && baseDatos[fechaActualStr].tramos[idx]) {
-            baseDatos[fechaActualStr].tramos[idx][campo] = valor;
-            guardarEnStorage();
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function eliminarTramo(idx) {
-        if (baseDatos[fechaActualStr] && baseDatos[fechaActualStr].tramos) {
-            baseDatos[fechaActualStr].tramos.splice(idx, 1);
-            guardarEnStorage();
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function setEstadoDia(tipo) {
-        if (!baseDatos[fechaActualStr]) {
-            baseDatos[fechaActualStr] = { incidencia: tipo, tramos: [] };
-        } else {
-            baseDatos[fechaActualStr].incidencia = tipo;
-        }
-        guardarEnStorage();
-        actualizarInterfazCompleta();
-    }
-
-    function navegarMesHistorial(delta) {
-        mesHistorialSeleccionado = new Date(mesHistorialSeleccionado.getFullYear(), mesHistorialSeleccionado.getMonth() + delta, 1);
-        renderizarHistorialDiario();
-    }
-
-    function mostrarExportar() {
-        const panel = document.getElementById('panelBackup');
-        const txt = document.getElementById('txtBackup');
-        const btn = document.getElementById('btnAccionBackup');
-        const tit = document.getElementById('backupTitle');
-
-        panel.style.display = 'block';
-        tit.textContent = 'Exportar Copia de Seguridad';
-        txt.value = JSON.stringify(baseDatos);
-        btn.textContent = 'Copiar al Portapapeles';
-        btn.onclick = () => {
-            txt.select();
-            navigator.clipboard.writeText(txt.value);
-            alert('¡Datos copiados al portapapeles!');
-        };
-    }
-
-    function mostrarImportar() {
-        const panel = document.getElementById('panelBackup');
-        const txt = document.getElementById('txtBackup');
-        const btn = document.getElementById('btnAccionBackup');
-        const tit = document.getElementById('backupTitle');
-
-        panel.style.display = 'block';
-        tit.textContent = 'Importar Copia de Seguridad';
-        txt.value = '';
-        btn.textContent = 'Restaurar Datos';
-        btn.onclick = () => {
-            try {
-                const parsed = JSON.parse(txt.value);
-                if (parsed && typeof parsed === 'object') {
-                    baseDatos = parsed;
-                    guardarEnStorage();
-                    actualizarInterfazCompleta();
-                    panel.style.display = 'none';
-                    alert('Datos importados correctamente.');
-                }
-            } catch (e) {
-                alert('El formato JSON no es válido.');
-            }
-        };
-    }
-
-    function borrarTodoElHistorial() {
-        if (confirm('¿Deseas reiniciar los fichajes de septiembre a los datos oficiales validados?')) {
-            baseDatos = JSON.parse(JSON.stringify(baseDatosInicialDinamica));
-            guardarEnStorage();
-            actualizarInterfazCompleta();
-        }
-    }
-
-    function iniciarApp() {
-        const inputFecha = document.getElementById('fechaActual');
-        if (inputFecha) {
-            inputFecha.value = fechaActualStr;
-            actualizarInterfazCompleta();
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciarApp);
-    } else {
-        iniciarApp();
-    }
-</script>
-</body>
-</html>
+        const date = parsearFec
