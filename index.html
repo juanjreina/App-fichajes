@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Control de Jornada</title>
+    <title>Control de Jornada Pro</title>
     <meta name="theme-color" content="#0d0f15">
     <style>
         :root {
@@ -115,14 +115,17 @@
     <div class="card card-bolsa">
         <div class="label" style="color: var(--accent);">Bolsa de Horas Total Acumulada</div>
         <div class="bolsa-val" id="totalBolsa" style="color: var(--danger);">-19:26</div>
-        <div style="font-size: 0.75rem; color: var(--muted);">Oficial consolidado (corte a 09/09 con salida de las 20:15)</div>
+        <div style="font-size: 0.75rem; color: var(--muted);">Saldo consolidado frente a la administración</div>
     </div>
 
     <!-- 2. REGISTRO INTEGRADO DEL DÍA -->
     <div class="card">
         <div class="row-header">
             <span class="label">Registro Diario</span>
-            <span class="dia-badge" id="diaHorasTotal">0h 00m</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="act-btn" style="padding: 3px 8px;" onclick="irAHoy()">Hoy</button>
+                <span class="dia-badge" id="diaHorasTotal">0h 00m</span>
+            </div>
         </div>
 
         <div class="date-control">
@@ -141,11 +144,11 @@
         </div>
     </div>
 
-    <!-- 3. TERMÓMETRO SEMANAL (OBJETIVO 35H) -->
+    <!-- 3. TERMÓMETRO SEMANAL DINÁMICO (OBJETIVO 35H) -->
     <div class="card">
         <div class="row-header">
-            <span class="label">Semana Actual (Objetivo 35h)</span>
-            <span id="semanaEstadoTxt" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">10h 13m restantes</span>
+            <span class="label" id="tituloTermometro">Semana Actual (Objetivo 35h)</span>
+            <span id="semanaEstadoTxt" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">35h 00m restantes</span>
         </div>
 
         <div class="progress-bar-wrap">
@@ -180,7 +183,7 @@
     <!-- 5. DETALLE DIARIO COMPLETO (DESPLEGABLE) -->
     <div class="card">
         <button class="accordion-btn" onclick="toggleAcc('accDiario', 'arrDiario')">
-            <span class="label">Historial Diario 2026</span>
+            <span class="label">Historial Diario</span>
             <span class="arrow" id="arrDiario">▼</span>
         </button>
         <div class="accordion-content" id="accDiario">
@@ -206,34 +209,44 @@
 </div>
 
 <script>
-    // SALDO BASE CONSOLIDADO AL CIERRE DEL 09/09/2026 (EN MINUTOS)
-    // -23h 55m (informe oficial) + 04h 29m (salida 20:15 del 08/09) = -19h 26m (-1166 min)
+    // SALDO BASE CONSOLIDADO AL CIERRE DEL 09/09/2026 (-19h 26m = -1166 min)
     const SALDO_OFICIAL_BASE_MINUTOS = -(19 * 60 + 26);
 
-    // DATOS DE SEPTIEMBRE BASE (Días 1 a 9 oficiales con salida a las 20:15)
-    const datosSeptiembre = {
-        "2026-09-01": { inc: "normal", tramos: [{ e: "11:28", s: "20:03" }] }, // 08:35
-        "2026-09-02": { inc: "normal", tramos: [{ e: "11:44", s: "20:02" }] }, // 08:18
-        "2026-09-03": { inc: "normal", tramos: [{ e: "11:40", s: "20:04" }] }, // 08:24
-        "2026-09-04": { inc: "ausencia", tramos: [] },                          // Falta S004 (-07:00)
-        "2026-09-07": { inc: "normal", tramos: [{ e: "08:02", s: "15:00" }] }, // 06:58
-        "2026-09-08": { inc: "normal", tramos: [{ e: "09:45", s: "13:39" }, { e: "15:46", s: "20:15" }] }, // 08:23
-        "2026-09-09": { inc: "normal", tramos: [{ e: "15:46", s: "20:30" }] }  // 04:44
+    // DATOS HISTÓRICOS HASTA EL CORTE OFICIAL (con la salida del 08/09 a las 20:15)
+    const datosSeptiembreBase = {
+        "2026-09-01": { inc: "normal", tramos: [{ e: "11:28", s: "20:03" }] },
+        "2026-09-02": { inc: "normal", tramos: [{ e: "11:44", s: "20:02" }] },
+        "2026-09-03": { inc: "normal", tramos: [{ e: "11:40", s: "20:04" }] },
+        "2026-09-04": { inc: "ausencia", tramos: [] },
+        "2026-09-07": { inc: "normal", tramos: [{ e: "08:02", s: "15:00" }] },
+        "2026-09-08": { inc: "normal", tramos: [{ e: "09:45", s: "13:39" }, { e: "15:46", s: "20:15" }] },
+        "2026-09-09": { inc: "normal", tramos: [{ e: "15:46", s: "20:30" }] }
     };
 
-    // Almacenamiento independiente nuevo
-    const STORAGE_KEY = "control_jornada_v10_clean";
+    const STORAGE_KEY = "control_jornada_v11_dinamico";
+
     function cargarDB() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) return JSON.parse(raw);
         } catch(e) {}
-        return JSON.parse(JSON.stringify(datosSeptiembre));
+        return JSON.parse(JSON.stringify(datosSeptiembreBase));
     }
 
     let db = cargarDB();
-    let fechaActual = "2026-09-10";
-    let mesVerAño = 2026, mesVerMes = 8; // Septiembre
+
+    // Obtener fecha actual local en formato YYYY-MM-DD
+    function obtenerFechaHoyISO() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    let fechaActual = obtenerFechaHoyISO();
+    let fechaObj = new Date();
+    let mesVerAño = fechaObj.getFullYear(), mesVerMes = fechaObj.getMonth();
 
     function guardarDB() {
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch(e) {}
@@ -269,7 +282,16 @@
         return `${neg ? '-' : ''}${h}:${String(min).padStart(2, '0')}`;
     }
 
-    // Render día seleccionado
+    // Calcular el lunes de la semana de una fecha dada
+    function obtenerLunes(fechaStr) {
+        const [y, m, d] = fechaStr.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        const dia = date.getDay();
+        const diff = dia === 0 ? -6 : 1 - dia; // Si es domingo (0), resta 6 días
+        date.setDate(date.getDate() + diff);
+        return date;
+    }
+
     function renderDia() {
         document.getElementById('fechaSel').value = fechaActual;
         const d = db[fechaActual] || { inc: 'normal', tramos: [] };
@@ -306,18 +328,30 @@
         document.getElementById('diaHorasTotal').textContent = fmtMin(totalMin);
     }
 
-    // Render termómetro de la semana
+    // Render Termómetro Semanal dinámico (basado en la fecha seleccionada)
     function renderSemana() {
-        const diasSemana = ['Lunes (7)', 'Martes (8)', 'Miércoles (9)', 'Jueves (10)', 'Viernes (11)', 'Sábado (12)', 'Domingo (13)'];
-        const claves = ['2026-09-07', '2026-09-08', '2026-09-09', '2026-09-10', '2026-09-11', '2026-09-12', '2026-09-13'];
+        const lunes = obtenerLunes(fechaActual);
+        const nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
         
         let totalSemana = 0;
         const cont = document.getElementById('semanaDiasDesglose');
         cont.innerHTML = '';
 
-        claves.forEach((k, idx) => {
-            const m = calcMinDia(k);
-            totalSemana += m;
+        const domingo = new Date(lunes);
+        domingo.setDate(lunes.getDate() + 6);
+        document.getElementById('tituloTermometro').textContent = `Semana (${lunes.getDate()}/${lunes.getMonth()+1} - ${domingo.getDate()}/${domingo.getMonth()+1})`;
+
+        for (let i = 0; i < 7; i++) {
+            const curDate = new Date(lunes);
+            curDate.setDate(lunes.getDate() + i);
+            const y = curDate.getFullYear();
+            const m = String(curDate.getMonth() + 1).padStart(2, '0');
+            const day = String(curDate.getDate()).padStart(2, '0');
+            const k = `${y}-${m}-${day}`;
+
+            const minutosDia = calcMinDia(k);
+            totalSemana += minutosDia;
+
             const d = db[k];
             let sub = 'Sin actividad';
             if (d && d.inc === 'normal' && d.tramos && d.tramos.length > 0) {
@@ -333,13 +367,13 @@
             row.onclick = () => { fechaActual = k; renderTodo(); };
             row.innerHTML = `
                 <div>
-                    <div style="font-weight:600;">${diasSemana[idx]}</div>
+                    <div style="font-weight:600;">${nombresDias[i]} (${curDate.getDate()})</div>
                     <div style="font-size:0.75rem; color:var(--muted);">${sub}</div>
                 </div>
-                <div style="font-weight:700;">${fmtMin(m)}</div>
+                <div style="font-weight:700;">${fmtMin(minutosDia)}</div>
             `;
             cont.appendChild(row);
-        });
+        }
 
         const pct = Math.min(100, Math.round((totalSemana / (35 * 60)) * 100));
         document.getElementById('pBar').style.width = `${pct}%`;
@@ -358,14 +392,12 @@
 
     // Render Bolsa Total
     function renderBolsa() {
-        // La bolsa parte exactamente de -19:26 y suma cualquier minuto fichado del 10/09 en adelante
         let extraMinutos = 0;
         Object.keys(db).forEach(k => {
             if (k >= "2026-09-10") {
                 const fichado = calcMinDia(k);
-                // Si es L-V tiene 7h de exigencia
-                const dt = new Date(k + 'T00:00:00');
-                const diaSem = dt.getDay();
+                const [y, m, d] = k.split('-').map(Number);
+                const diaSem = new Date(y, m - 1, d).getDay();
                 let teorico = (diaSem >= 1 && diaSem <= 5) ? (7 * 60) : 0;
                 if (db[k].inc === 'vacaciones' || db[k].inc === 'libre') teorico = 0;
                 extraMinutos += (fichado - teorico);
@@ -378,7 +410,7 @@
         elem.style.color = saldoFinal >= 0 ? 'var(--success)' : 'var(--danger)';
     }
 
-    // Meses oficiales
+    // Meses oficiales del informe
     function renderMeses() {
         const meses = [
             { n: "Enero 2026", f: "75:57", t: "95:12", s: "-19:15" },
@@ -402,96 +434,7 @@
         `).join('');
     }
 
-    // Historial diario simple
+    // Historial diario
     function renderHistorial() {
         const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        document.getElementById('mesHistorialTxt').textContent = `${nombresMeses[mesVerMes]} ${mesVerAño}`;
-        const tbody = document.getElementById('tablaDiarioBody');
-        tbody.innerHTML = '';
-
-        if (mesVerAño === 2026 && mesVerMes === 8) {
-            // Mostrar los días registrados de septiembre
-            const keys = Object.keys(db).filter(k => k.startsWith('2026-09')).sort();
-            tbody.innerHTML = keys.map(k => {
-                const dia = parseInt(k.split('-')[2], 10);
-                const d = db[k];
-                let desc = '-';
-                if (d.inc === 'normal' && d.tramos && d.tramos.length > 0) desc = d.tramos.map(t=>`${t.e}-${t.s}`).join(', ');
-                else if (d.inc === 'ausencia') desc = 'Ausencia S004';
-                else if (d.inc === 'vacaciones') desc = 'Vacaciones';
-                else if (d.inc === 'libre') desc = 'Compensado';
-                return `
-                    <tr>
-                        <td><strong>${dia}</strong></td>
-                        <td style="font-size:0.75rem; color:var(--muted);">${desc}</td>
-                        <td class="text-r" style="font-weight:600;">${fmtMin(calcMinDia(k))}</td>
-                    </tr>
-                `;
-            }).join('');
-        } else {
-            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--muted); padding:10px;">Mes cerrado en informe oficial</td></tr>`;
-        }
-    }
-
-    function toggleAcc(idContent, idArr) {
-        const el = document.getElementById(idContent);
-        const arr = document.getElementById(idArr);
-        el.classList.toggle('open');
-        arr.classList.toggle('open');
-    }
-
-    function seleccionarFecha() {
-        fechaActual = document.getElementById('fechaSel').value;
-        renderTodo();
-    }
-
-    function nuevoTramo() {
-        if (!db[fechaActual]) db[fechaActual] = { inc: 'normal', tramos: [] };
-        if (!db[fechaActual].tramos) db[fechaActual].tramos = [];
-        db[fechaActual].tramos.push({ e: "15:45", s: "20:15" });
-        guardarDB();
-        renderTodo();
-    }
-
-    function updTramo(idx, campo, val) {
-        if (db[fechaActual] && db[fechaActual].tramos && db[fechaActual].tramos[idx]) {
-            db[fechaActual].tramos[idx][campo] = val;
-            guardarDB();
-            renderTodo();
-        }
-    }
-
-    function delTramo(idx) {
-        if (db[fechaActual] && db[fechaActual].tramos) {
-            db[fechaActual].tramos.splice(idx, 1);
-            guardarDB();
-            renderTodo();
-        }
-    }
-
-    function setIncidencia(tipo) {
-        if (!db[fechaActual]) db[fechaActual] = { inc: tipo, tramos: [] };
-        else db[fechaActual].inc = tipo;
-        guardarDB();
-        renderTodo();
-    }
-
-    function cambiarMes(delta) {
-        mesVerMes += delta;
-        if (mesVerMes < 0) { mesVerMes = 11; mesVerAño--; }
-        if (mesVerMes > 11) { mesVerMes = 0; mesVerAño++; }
-        renderHistorial();
-    }
-
-    function renderTodo() {
-        renderDia();
-        renderSemana();
-        renderBolsa();
-        renderMeses();
-        renderHistorial();
-    }
-
-    document.addEventListener('DOMContentLoaded', renderTodo);
-</script>
-</body>
-</html>
+        document.getElementById('mesHistorialTxt').tex
