@@ -183,7 +183,7 @@
     <!-- 5. DETALLE DIARIO COMPLETO (DESPLEGABLE) -->
     <div class="card">
         <button class="accordion-btn" onclick="toggleAcc('accDiario', 'arrDiario')">
-            <span class="label">Historial Diario</span>
+            <span class="label">Historial Diario Completo</span>
             <span class="arrow" id="arrDiario">▼</span>
         </button>
         <div class="accordion-content" id="accDiario">
@@ -209,232 +209,94 @@
 </div>
 
 <script>
-    // SALDO BASE CONSOLIDADO AL CIERRE DEL 09/09/2026 (-19h 26m = -1166 min)
-    const SALDO_OFICIAL_BASE_MINUTOS = -(19 * 60 + 26);
+    // Saldo acumulado oficial consolidado hasta el corte (09/09/2026 con 08/09 corregido a las 20:15): -19:26
+    const SALDO_BASE_MINUTOS = -(19 * 60 + 26);
 
-    // DATOS HISTÓRICOS HASTA EL CORTE OFICIAL (con la salida del 08/09 a las 20:15)
-    const datosSeptiembreBase = {
-        "2026-09-01": { inc: "normal", tramos: [{ e: "11:28", s: "20:03" }] },
-        "2026-09-02": { inc: "normal", tramos: [{ e: "11:44", s: "20:02" }] },
-        "2026-09-03": { inc: "normal", tramos: [{ e: "11:40", s: "20:04" }] },
-        "2026-09-04": { inc: "ausencia", tramos: [] },
-        "2026-09-07": { inc: "normal", tramos: [{ e: "08:02", s: "15:00" }] },
-        "2026-09-08": { inc: "normal", tramos: [{ e: "09:45", s: "13:39" }, { e: "15:46", s: "20:15" }] },
-        "2026-09-09": { inc: "normal", tramos: [{ e: "15:46", s: "20:30" }] }
-    };
+    // HISTORIAL COMPLETO DÍA POR DÍA TRANSCRITO DE TUS 10 PÁGINAS
+    const historialOficialCompleto = {
+        // ENERO
+        "2026-01-02": { inc: "vacaciones", tramos: [] }, "2026-01-05": { inc: "vacaciones", tramos: [] }, "2026-01-07": { inc: "vacaciones", tramos: [] },
+        "2026-01-08": { inc: "normal", tramos: [{ e: "15:51", s: "19:59" }] }, "2026-01-09": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] },
+        "2026-01-12": { inc: "normal", tramos: [{ e: "15:47", s: "20:14" }] }, "2026-01-13": { inc: "normal", tramos: [{ e: "15:51", s: "20:13" }] },
+        "2026-01-14": { inc: "normal", tramos: [{ e: "15:44", s: "20:15" }] }, "2026-01-15": { inc: "normal", tramos: [{ e: "15:27", s: "20:08" }] },
+        "2026-01-16": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] }, "2026-01-19": { inc: "normal", tramos: [{ e: "15:53", s: "20:00" }] },
+        "2026-01-20": { inc: "normal", tramos: [{ e: "15:29", s: "20:05" }] }, "2026-01-21": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-01-22": { inc: "normal", tramos: [{ e: "15:39", s: "20:13" }] }, "2026-01-23": { inc: "normal", tramos: [{ e: "15:44", s: "20:13" }] },
+        "2026-01-26": { inc: "normal", tramos: [{ e: "15:31", s: "20:15" }] }, "2026-01-27": { inc: "normal", tramos: [{ e: "15:33", s: "20:09" }] },
+        "2026-01-28": { inc: "normal", tramos: [{ e: "15:42", s: "20:01" }] }, "2026-01-29": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-01-30": { inc: "normal", tramos: [{ e: "15:45", s: "20:02" }] },
 
-    const STORAGE_KEY = "control_jornada_v11_dinamico";
+        // FEBRERO
+        "2026-02-02": { inc: "normal", tramos: [{ e: "15:37", s: "20:16" }] }, "2026-02-03": { inc: "normal", tramos: [{ e: "15:40", s: "20:12" }] },
+        "2026-02-04": { inc: "normal", tramos: [{ e: "15:44", s: "20:02" }] }, "2026-02-05": { inc: "normal", tramos: [{ e: "15:47", s: "20:58" }] },
+        "2026-02-06": { inc: "normal", tramos: [{ e: "15:45", s: "20:05" }] }, "2026-02-08": { inc: "normal", tramos: [{ e: "10:30", s: "16:14" }] },
+        "2026-02-09": { inc: "normal", tramos: [{ e: "15:36", s: "20:17" }] }, "2026-02-10": { inc: "normal", tramos: [{ e: "15:48", s: "20:14" }] },
+        "2026-02-11": { inc: "normal", tramos: [{ e: "12:10", s: "14:00" }, { e: "15:24", s: "20:12" }] },
+        "2026-02-12": { inc: "normal", tramos: [{ e: "15:29", s: "20:15" }] }, "2026-02-13": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] },
+        "2026-02-16": { inc: "normal", tramos: [{ e: "15:42", s: "20:16" }] }, "2026-02-17": { inc: "normal", tramos: [{ e: "15:28", s: "20:16" }] },
+        "2026-02-18": { inc: "normal", tramos: [{ e: "15:49", s: "20:14" }] }, "2026-02-19": { inc: "normal", tramos: [{ e: "15:37", s: "20:19" }] },
+        "2026-02-20": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] },
+        "2026-02-21": { inc: "normal", tramos: [{ e: "08:21", s: "14:16" }, { e: "15:58", s: "19:55" }] },
+        "2026-02-22": { inc: "normal", tramos: [{ e: "08:28", s: "13:15" }] }, "2026-02-23": { inc: "normal", tramos: [{ e: "15:28", s: "20:21" }] },
+        "2026-02-24": { inc: "normal", tramos: [{ e: "15:39", s: "20:18" }] }, "2026-02-25": { inc: "normal", tramos: [{ e: "15:45", s: "20:16" }] },
+        "2026-02-26": { inc: "ausencia", tramos: [] }, "2026-02-27": { inc: "normal", tramos: [{ e: "15:40", s: "20:17" }] },
+        "2026-02-28": { inc: "normal", tramos: [{ e: "08:10", s: "15:03" }] },
 
-    function cargarDB() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) return JSON.parse(raw);
-        } catch(e) {}
-        return JSON.parse(JSON.stringify(datosSeptiembreBase));
-    }
+        // MARZO
+        "2026-03-02": { inc: "normal", tramos: [{ e: "15:31", s: "20:15" }] }, "2026-03-03": { inc: "normal", tramos: [{ e: "15:29", s: "20:17" }] },
+        "2026-03-04": { inc: "normal", tramos: [{ e: "15:45", s: "20:16" }] }, "2026-03-05": { inc: "normal", tramos: [{ e: "15:35", s: "20:15" }] },
+        "2026-03-06": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] }, "2026-03-09": { inc: "normal", tramos: [{ e: "15:32", s: "20:35" }] },
+        "2026-03-10": { inc: "normal", tramos: [{ e: "15:36", s: "20:12" }] }, "2026-03-11": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-03-12": { inc: "normal", tramos: [{ e: "10:22", s: "11:16" }, { e: "15:36", s: "20:16" }] },
+        "2026-03-13": { inc: "normal", tramos: [{ e: "15:47", s: "20:16" }] }, "2026-03-14": { inc: "normal", tramos: [{ e: "14:29", s: "19:11" }] },
+        "2026-03-15": { inc: "normal", tramos: [{ e: "08:52", s: "14:20" }, { e: "17:57", s: "20:34" }] },
+        "2026-03-16": { inc: "normal", tramos: [{ e: "15:26", s: "20:15" }] }, "2026-03-17": { inc: "normal", tramos: [{ e: "15:34", s: "20:18" }] },
+        "2026-03-18": { inc: "ausencia", tramos: [] }, "2026-03-20": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-03-23": { inc: "normal", tramos: [{ e: "15:46", s: "20:09" }] }, "2026-03-24": { inc: "normal", tramos: [{ e: "15:45", s: "20:12" }] },
+        "2026-03-25": { inc: "normal", tramos: [{ e: "15:45", s: "20:09" }] }, "2026-03-26": { inc: "normal", tramos: [{ e: "15:47", s: "20:10" }] },
+        "2026-03-27": { inc: "normal", tramos: [{ e: "15:43", s: "20:12" }] }, "2026-03-30": { inc: "vacaciones", tramos: [] },
+        "2026-03-31": { inc: "vacaciones", tramos: [] },
 
-    let db = cargarDB();
+        // ABRIL
+        "2026-04-01": { inc: "vacaciones", tramos: [] }, "2026-04-06": { inc: "vacaciones", tramos: [] },
+        "2026-04-07": { inc: "normal", tramos: [{ e: "15:42", s: "20:14" }] }, "2026-04-08": { inc: "normal", tramos: [{ e: "15:45", s: "20:17" }] },
+        "2026-04-09": { inc: "normal", tramos: [{ e: "15:38", s: "20:13" }] }, "2026-04-10": { inc: "normal", tramos: [{ e: "15:45", s: "20:09" }] },
+        "2026-04-13": { inc: "normal", tramos: [{ e: "15:43", s: "20:14" }] }, "2026-04-14": { inc: "normal", tramos: [{ e: "15:43", s: "20:16" }] },
+        "2026-04-15": { inc: "normal", tramos: [{ e: "15:48", s: "20:17" }] }, "2026-04-16": { inc: "normal", tramos: [{ e: "15:45", s: "20:18" }] },
+        "2026-04-17": { inc: "normal", tramos: [{ e: "08:00", s: "13:36" }] }, "2026-04-20": { inc: "normal", tramos: [{ e: "15:37", s: "20:16" }] },
+        "2026-04-21": { inc: "normal", tramos: [{ e: "15:43", s: "20:18" }] }, "2026-04-22": { inc: "normal", tramos: [{ e: "15:33", s: "20:08" }] },
+        "2026-04-23": { inc: "normal", tramos: [{ e: "15:45", s: "20:43" }] }, "2026-04-24": { inc: "normal", tramos: [{ e: "15:42", s: "20:06" }] },
+        "2026-04-27": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] },
+        "2026-04-28": { inc: "normal", tramos: [{ e: "09:35", s: "10:05" }, { e: "15:45", s: "20:15" }] },
+        "2026-04-29": { inc: "normal", tramos: [{ e: "15:38", s: "20:10" }] }, "2026-04-30": { inc: "vacaciones", tramos: [] },
 
-    // Obtener fecha actual local en formato YYYY-MM-DD
-    function obtenerFechaHoyISO() {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }
+        // MAYO
+        "2026-05-05": { inc: "vacaciones", tramos: [] }, "2026-05-06": { inc: "normal", tramos: [{ e: "15:38", s: "20:26" }] },
+        "2026-05-07": { inc: "normal", tramos: [{ e: "15:28", s: "20:15" }] }, "2026-05-08": { inc: "normal", tramos: [{ e: "15:39", s: "20:17" }] },
+        "2026-05-11": { inc: "normal", tramos: [{ e: "15:44", s: "20:19" }] }, "2026-05-12": { inc: "normal", tramos: [{ e: "15:38", s: "20:17" }] },
+        "2026-05-13": { inc: "normal", tramos: [{ e: "15:49", s: "20:14" }] }, "2026-05-14": { inc: "normal", tramos: [{ e: "15:42", s: "20:27" }] },
+        "2026-05-15": { inc: "normal", tramos: [{ e: "15:47", s: "20:30" }] }, "2026-05-18": { inc: "normal", tramos: [{ e: "15:44", s: "20:15" }] },
+        "2026-05-19": { inc: "normal", tramos: [{ e: "15:22", s: "20:16" }] }, "2026-05-20": { inc: "normal", tramos: [{ e: "15:39", s: "20:10" }] },
+        "2026-05-21": { inc: "normal", tramos: [{ e: "12:31", s: "14:28" }, { e: "15:42", s: "21:15" }] },
+        "2026-05-22": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] }, "2026-05-25": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] },
+        "2026-05-26": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] }, "2026-05-27": { inc: "normal", tramos: [{ e: "15:35", s: "20:14" }] },
+        "2026-05-28": { inc: "normal", tramos: [{ e: "15:44", s: "20:34" }] }, "2026-05-29": { inc: "normal", tramos: [{ e: "15:42", s: "20:34" }] },
+        "2026-05-30": { inc: "normal", tramos: [{ e: "08:31", s: "18:06" }] },
 
-    let fechaActual = obtenerFechaHoyISO();
-    let fechaObj = new Date();
-    let mesVerAño = fechaObj.getFullYear(), mesVerMes = fechaObj.getMonth();
-
-    function guardarDB() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch(e) {}
-    }
-
-    function calcMin(e, s) {
-        if (!e || !s) return 0;
-        const [h1, m1] = e.split(':').map(Number);
-        const [h2, m2] = s.split(':').map(Number);
-        return (h2 * 60 + m2) - (h1 * 60 + m1);
-    }
-
-    function calcMinDia(fecha) {
-        const d = db[fecha];
-        if (!d || d.inc !== 'normal' || !d.tramos) return 0;
-        return d.tramos.reduce((acc, t) => acc + calcMin(t.e, t.s), 0);
-    }
-
-    function fmtMin(m, signo = false) {
-        const neg = m < 0;
-        const abs = Math.abs(Math.round(m));
-        const h = Math.floor(abs / 60);
-        const min = abs % 60;
-        const s = neg ? '-' : (signo ? '+' : '');
-        return `${s}${h}h ${String(min).padStart(2, '0')}m`;
-    }
-
-    function fmtHoras(m) {
-        const neg = m < 0;
-        const abs = Math.abs(Math.round(m));
-        const h = Math.floor(abs / 60);
-        const min = abs % 60;
-        return `${neg ? '-' : ''}${h}:${String(min).padStart(2, '0')}`;
-    }
-
-    // Calcular el lunes de la semana de una fecha dada
-    function obtenerLunes(fechaStr) {
-        const [y, m, d] = fechaStr.split('-').map(Number);
-        const date = new Date(y, m - 1, d);
-        const dia = date.getDay();
-        const diff = dia === 0 ? -6 : 1 - dia; // Si es domingo (0), resta 6 días
-        date.setDate(date.getDate() + diff);
-        return date;
-    }
-
-    function renderDia() {
-        document.getElementById('fechaSel').value = fechaActual;
-        const d = db[fechaActual] || { inc: 'normal', tramos: [] };
-        
-        ['btnNormal', 'btnLibre', 'btnVac', 'btnAus'].forEach(id => document.getElementById(id).classList.remove('active'));
-        if (d.inc === 'normal') document.getElementById('btnNormal').classList.add('active');
-        if (d.inc === 'libre') document.getElementById('btnLibre').classList.add('active');
-        if (d.inc === 'vacaciones') document.getElementById('btnVac').classList.add('active');
-        if (d.inc === 'ausencia') document.getElementById('btnAus').classList.add('active');
-
-        const lista = document.getElementById('tramosLista');
-        lista.innerHTML = '';
-
-        if (d.inc === 'normal') {
-            document.getElementById('btnAdd').style.display = 'block';
-            (d.tramos || []).forEach((t, i) => {
-                const row = document.createElement('div');
-                row.className = 'tramo';
-                row.innerHTML = `
-                    <input type="time" value="${t.e}" onchange="updTramo(${i}, 'e', this.value)">
-                    <span style="color:var(--muted); font-size:0.8rem;">a</span>
-                    <input type="time" value="${t.s}" onchange="updTramo(${i}, 's', this.value)">
-                    <button class="btn-del" onclick="delTramo(${i})">✕</button>
-                `;
-                lista.appendChild(row);
-            });
-        } else {
-            document.getElementById('btnAdd').style.display = 'none';
-            let txt = d.inc === 'vacaciones' ? '🌴 Vacaciones' : (d.inc === 'libre' ? '💤 Compensado' : '⚠️ Falta S004 (-07:00)');
-            lista.innerHTML = `<div style="text-align:center; padding:12px; color:var(--muted); font-size:0.85rem;">${txt}</div>`;
-        }
-
-        const totalMin = calcMinDia(fechaActual);
-        document.getElementById('diaHorasTotal').textContent = fmtMin(totalMin);
-    }
-
-    // Render Termómetro Semanal dinámico (basado en la fecha seleccionada)
-    function renderSemana() {
-        const lunes = obtenerLunes(fechaActual);
-        const nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        
-        let totalSemana = 0;
-        const cont = document.getElementById('semanaDiasDesglose');
-        cont.innerHTML = '';
-
-        const domingo = new Date(lunes);
-        domingo.setDate(lunes.getDate() + 6);
-        document.getElementById('tituloTermometro').textContent = `Semana (${lunes.getDate()}/${lunes.getMonth()+1} - ${domingo.getDate()}/${domingo.getMonth()+1})`;
-
-        for (let i = 0; i < 7; i++) {
-            const curDate = new Date(lunes);
-            curDate.setDate(lunes.getDate() + i);
-            const y = curDate.getFullYear();
-            const m = String(curDate.getMonth() + 1).padStart(2, '0');
-            const day = String(curDate.getDate()).padStart(2, '0');
-            const k = `${y}-${m}-${day}`;
-
-            const minutosDia = calcMinDia(k);
-            totalSemana += minutosDia;
-
-            const d = db[k];
-            let sub = 'Sin actividad';
-            if (d && d.inc === 'normal' && d.tramos && d.tramos.length > 0) {
-                sub = d.tramos.map(t => `${t.e}-${t.s}`).join(', ');
-            } else if (d && d.inc !== 'normal') {
-                sub = d.inc === 'ausencia' ? '⚠️ S004' : (d.inc === 'vacaciones' ? '🌴 Vacaciones' : '💤 Compensado');
-            }
-
-            const row = document.createElement('div');
-            row.className = 'day-row';
-            row.style.cursor = 'pointer';
-            if (k === fechaActual) row.style.color = 'var(--accent)';
-            row.onclick = () => { fechaActual = k; renderTodo(); };
-            row.innerHTML = `
-                <div>
-                    <div style="font-weight:600;">${nombresDias[i]} (${curDate.getDate()})</div>
-                    <div style="font-size:0.75rem; color:var(--muted);">${sub}</div>
-                </div>
-                <div style="font-weight:700;">${fmtMin(minutosDia)}</div>
-            `;
-            cont.appendChild(row);
-        }
-
-        const pct = Math.min(100, Math.round((totalSemana / (35 * 60)) * 100));
-        document.getElementById('pBar').style.width = `${pct}%`;
-        document.getElementById('pTxt').textContent = `${pct}% (${fmtMin(totalSemana)} / 35h)`;
-
-        const rest = (35 * 60) - totalSemana;
-        const estadoTxt = document.getElementById('semanaEstadoTxt');
-        if (rest <= 0) {
-            estadoTxt.textContent = `¡Cubierto! (+${fmtMin(Math.abs(rest))})`;
-            estadoTxt.style.color = 'var(--success)';
-        } else {
-            estadoTxt.textContent = `${fmtMin(rest)} para 35h`;
-            estadoTxt.style.color = 'var(--accent)';
-        }
-    }
-
-    // Render Bolsa Total
-    function renderBolsa() {
-        let extraMinutos = 0;
-        Object.keys(db).forEach(k => {
-            if (k >= "2026-09-10") {
-                const fichado = calcMinDia(k);
-                const [y, m, d] = k.split('-').map(Number);
-                const diaSem = new Date(y, m - 1, d).getDay();
-                let teorico = (diaSem >= 1 && diaSem <= 5) ? (7 * 60) : 0;
-                if (db[k].inc === 'vacaciones' || db[k].inc === 'libre') teorico = 0;
-                extraMinutos += (fichado - teorico);
-            }
-        });
-
-        const saldoFinal = SALDO_OFICIAL_BASE_MINUTOS + extraMinutos;
-        const elem = document.getElementById('totalBolsa');
-        elem.textContent = fmtHoras(saldoFinal);
-        elem.style.color = saldoFinal >= 0 ? 'var(--success)' : 'var(--danger)';
-    }
-
-    // Meses oficiales del informe
-    function renderMeses() {
-        const meses = [
-            { n: "Enero 2026", f: "75:57", t: "95:12", s: "-19:15" },
-            { n: "Febrero 2026", f: "117:05", t: "112:00", s: "+05:05" },
-            { n: "Marzo 2026", f: "96:17", t: "106:24", s: "-10:07" },
-            { n: "Abril 2026", f: "79:02", t: "89:12", s: "-10:10" },
-            { n: "Mayo 2026", f: "99:08", t: "100:48", s: "-01:40" },
-            { n: "Junio 2026", f: "149:58", t: "147:00", s: "+02:58" },
-            { n: "Julio 2026", f: "175:12", t: "161:00", s: "+14:12" },
-            { n: "Agosto 2026", f: "51:15", t: "42:00", s: "+09:15" },
-            { n: "Septiembre 2026", f: "45:16", t: "49:00", s: "-03:44" }
-        ];
-        const tbody = document.getElementById('tablaMesesBody');
-        tbody.innerHTML = meses.map(m => `
-            <tr>
-                <td>${m.n}</td>
-                <td class="text-r">${m.f}</td>
-                <td class="text-r">${m.t}</td>
-                <td class="text-r" style="color:${m.s.startsWith('+')?'var(--success)':'var(--danger)'}; font-weight:600;">${m.s}</td>
-            </tr>
-        `).join('');
-    }
-
-    // Historial diario
-    function renderHistorial() {
-        const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        document.getElementById('mesHistorialTxt').tex
+        // JUNIO
+        "2026-06-01": { inc: "normal", tramos: [{ e: "09:08", s: "11:48" }, { e: "15:40", s: "20:14" }] },
+        "2026-06-02": { inc: "normal", tramos: [{ e: "08:32", s: "13:20" }, { e: "15:40", s: "20:12" }] },
+        "2026-06-03": { inc: "normal", tramos: [{ e: "15:41", s: "20:21" }] }, "2026-06-04": { inc: "normal", tramos: [{ e: "15:44", s: "20:32" }] },
+        "2026-06-05": { inc: "ausencia", tramos: [] }, "2026-06-06": { inc: "normal", tramos: [{ e: "14:34", s: "21:10" }] },
+        "2026-06-07": { inc: "normal", tramos: [{ e: "14:19", s: "21:13" }] }, "2026-06-08": { inc: "ausencia", tramos: [] },
+        "2026-06-10": { inc: "normal", tramos: [{ e: "10:28", s: "15:07" }, { e: "15:23", s: "17:46" }, { e: "18:53", s: "21:47" }] },
+        "2026-06-11": { inc: "normal", tramos: [{ e: "08:49", s: "12:03" }, { e: "16:23", s: "21:06" }] },
+        "2026-06-12": { inc: "ausencia", tramos: [] }, "2026-06-13": { inc: "normal", tramos: [{ e: "14:26", s: "20:56" }] },
+        "2026-06-14": { inc: "normal", tramos: [{ e: "10:56", s: "15:48" }] }, "2026-06-15": { inc: "normal", tramos: [{ e: "13:58", s: "19:59" }] },
+        "2026-06-16": { inc: "normal", tramos: [{ e: "10:05", s: "13:22" }, { e: "16:05", s: "20:03" }] },
+        "2026-06-17": { inc: "normal", tramos: [{ e: "10:15", s: "12:28" }, { e: "15:11", s: "20:24" }] },
+        "2026-06-18": { inc: "normal", tramos: [{ e: "08:53", s: "13:46" }, { e: "15:01", s: "19:44" }] },
+        "2026-06-19": { inc: "normal", tramos: [{ e: "14:06", s: "19:01" }] },
+        "2026-06-22": { inc: "normal", tramos: [{ e: "10:14", s: "14:35" }, { e: "15:45", s: "20:52" }] },
+        "2026-06-23": { inc: "normal", tramos: [{ e: "09:57", s: "13:08" }, { e: "16:10", s: "20:50" }] },
+        "2026-06-24": { inc: "normal", tramos: 
