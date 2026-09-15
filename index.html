@@ -17,13 +17,14 @@
             --danger: #ff453a;
             --radius: 14px;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            margin: 0; padding: 16px;
+            padding: 16px 16px 40px 16px;
             display: flex; flex-direction: column; align-items: center;
+            user-select: none;
         }
         .container { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
         
@@ -93,7 +94,7 @@
             background: none; border: none; color: var(--text); padding: 0; cursor: pointer; font-family: inherit;
         }
         .accordion-content { display: none; margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }
-        .accordion-content.open { display: block; }
+        .accordion-content.open { display: block !important; }
         .arrow { font-size: 0.75rem; color: var(--accent); transition: transform 0.2s; }
         .arrow.open { transform: rotate(180deg); }
 
@@ -209,94 +210,522 @@
 </div>
 
 <script>
-    // Saldo acumulado oficial consolidado hasta el corte (09/09/2026 con 08/09 corregido a las 20:15): -19:26
-    const SALDO_BASE_MINUTOS = -(19 * 60 + 26);
+    // Saldo inicial cerrado al 09/09/2026: -19h 26m (-1166 minutos)
+    var SALDO_BASE_MINUTOS = -(19 * 60 + 26);
 
-    // HISTORIAL COMPLETO DÍA POR DÍA TRANSCRITO DE TUS 10 PÁGINAS
-    const historialOficialCompleto = {
-        // ENERO
-        "2026-01-02": { inc: "vacaciones", tramos: [] }, "2026-01-05": { inc: "vacaciones", tramos: [] }, "2026-01-07": { inc: "vacaciones", tramos: [] },
-        "2026-01-08": { inc: "normal", tramos: [{ e: "15:51", s: "19:59" }] }, "2026-01-09": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] },
-        "2026-01-12": { inc: "normal", tramos: [{ e: "15:47", s: "20:14" }] }, "2026-01-13": { inc: "normal", tramos: [{ e: "15:51", s: "20:13" }] },
-        "2026-01-14": { inc: "normal", tramos: [{ e: "15:44", s: "20:15" }] }, "2026-01-15": { inc: "normal", tramos: [{ e: "15:27", s: "20:08" }] },
-        "2026-01-16": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] }, "2026-01-19": { inc: "normal", tramos: [{ e: "15:53", s: "20:00" }] },
-        "2026-01-20": { inc: "normal", tramos: [{ e: "15:29", s: "20:05" }] }, "2026-01-21": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
-        "2026-01-22": { inc: "normal", tramos: [{ e: "15:39", s: "20:13" }] }, "2026-01-23": { inc: "normal", tramos: [{ e: "15:44", s: "20:13" }] },
-        "2026-01-26": { inc: "normal", tramos: [{ e: "15:31", s: "20:15" }] }, "2026-01-27": { inc: "normal", tramos: [{ e: "15:33", s: "20:09" }] },
-        "2026-01-28": { inc: "normal", tramos: [{ e: "15:42", s: "20:01" }] }, "2026-01-29": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+    // BASE DE DATOS DÍA A DÍA
+    var baseHistorica = {
+        "2026-01-08": { inc: "normal", tramos: [{ e: "15:51", s: "19:59" }] },
+        "2026-01-09": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] },
+        "2026-01-12": { inc: "normal", tramos: [{ e: "15:47", s: "20:14" }] },
+        "2026-01-13": { inc: "normal", tramos: [{ e: "15:51", s: "20:13" }] },
+        "2026-01-14": { inc: "normal", tramos: [{ e: "15:44", s: "20:15" }] },
+        "2026-01-15": { inc: "normal", tramos: [{ e: "15:27", s: "20:08" }] },
+        "2026-01-16": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] },
+        "2026-01-19": { inc: "normal", tramos: [{ e: "15:53", s: "20:00" }] },
+        "2026-01-20": { inc: "normal", tramos: [{ e: "15:29", s: "20:05" }] },
+        "2026-01-21": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-01-22": { inc: "normal", tramos: [{ e: "15:39", s: "20:13" }] },
+        "2026-01-23": { inc: "normal", tramos: [{ e: "15:44", s: "20:13" }] },
+        "2026-01-26": { inc: "normal", tramos: [{ e: "15:31", s: "20:15" }] },
+        "2026-01-27": { inc: "normal", tramos: [{ e: "15:33", s: "20:09" }] },
+        "2026-01-28": { inc: "normal", tramos: [{ e: "15:42", s: "20:01" }] },
+        "2026-01-29": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
         "2026-01-30": { inc: "normal", tramos: [{ e: "15:45", s: "20:02" }] },
 
-        // FEBRERO
-        "2026-02-02": { inc: "normal", tramos: [{ e: "15:37", s: "20:16" }] }, "2026-02-03": { inc: "normal", tramos: [{ e: "15:40", s: "20:12" }] },
-        "2026-02-04": { inc: "normal", tramos: [{ e: "15:44", s: "20:02" }] }, "2026-02-05": { inc: "normal", tramos: [{ e: "15:47", s: "20:58" }] },
-        "2026-02-06": { inc: "normal", tramos: [{ e: "15:45", s: "20:05" }] }, "2026-02-08": { inc: "normal", tramos: [{ e: "10:30", s: "16:14" }] },
-        "2026-02-09": { inc: "normal", tramos: [{ e: "15:36", s: "20:17" }] }, "2026-02-10": { inc: "normal", tramos: [{ e: "15:48", s: "20:14" }] },
+        "2026-02-02": { inc: "normal", tramos: [{ e: "15:37", s: "20:16" }] },
+        "2026-02-03": { inc: "normal", tramos: [{ e: "15:40", s: "20:12" }] },
+        "2026-02-04": { inc: "normal", tramos: [{ e: "15:44", s: "20:02" }] },
+        "2026-02-05": { inc: "normal", tramos: [{ e: "15:47", s: "20:58" }] },
+        "2026-02-06": { inc: "normal", tramos: [{ e: "15:45", s: "20:05" }] },
+        "2026-02-08": { inc: "normal", tramos: [{ e: "10:30", s: "16:14" }] },
+        "2026-02-09": { inc: "normal", tramos: [{ e: "15:36", s: "20:17" }] },
+        "2026-02-10": { inc: "normal", tramos: [{ e: "15:48", s: "20:14" }] },
         "2026-02-11": { inc: "normal", tramos: [{ e: "12:10", s: "14:00" }, { e: "15:24", s: "20:12" }] },
-        "2026-02-12": { inc: "normal", tramos: [{ e: "15:29", s: "20:15" }] }, "2026-02-13": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] },
-        "2026-02-16": { inc: "normal", tramos: [{ e: "15:42", s: "20:16" }] }, "2026-02-17": { inc: "normal", tramos: [{ e: "15:28", s: "20:16" }] },
-        "2026-02-18": { inc: "normal", tramos: [{ e: "15:49", s: "20:14" }] }, "2026-02-19": { inc: "normal", tramos: [{ e: "15:37", s: "20:19" }] },
+        "2026-02-12": { inc: "normal", tramos: [{ e: "15:29", s: "20:15" }] },
+        "2026-02-13": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] },
+        "2026-02-16": { inc: "normal", tramos: [{ e: "15:42", s: "20:16" }] },
+        "2026-02-17": { inc: "normal", tramos: [{ e: "15:28", s: "20:16" }] },
+        "2026-02-18": { inc: "normal", tramos: [{ e: "15:49", s: "20:14" }] },
+        "2026-02-19": { inc: "normal", tramos: [{ e: "15:37", s: "20:19" }] },
         "2026-02-20": { inc: "normal", tramos: [{ e: "15:43", s: "20:15" }] },
         "2026-02-21": { inc: "normal", tramos: [{ e: "08:21", s: "14:16" }, { e: "15:58", s: "19:55" }] },
-        "2026-02-22": { inc: "normal", tramos: [{ e: "08:28", s: "13:15" }] }, "2026-02-23": { inc: "normal", tramos: [{ e: "15:28", s: "20:21" }] },
-        "2026-02-24": { inc: "normal", tramos: [{ e: "15:39", s: "20:18" }] }, "2026-02-25": { inc: "normal", tramos: [{ e: "15:45", s: "20:16" }] },
-        "2026-02-26": { inc: "ausencia", tramos: [] }, "2026-02-27": { inc: "normal", tramos: [{ e: "15:40", s: "20:17" }] },
+        "2026-02-22": { inc: "normal", tramos: [{ e: "08:28", s: "13:15" }] },
+        "2026-02-23": { inc: "normal", tramos: [{ e: "15:28", s: "20:21" }] },
+        "2026-02-24": { inc: "normal", tramos: [{ e: "15:39", s: "20:18" }] },
+        "2026-02-25": { inc: "normal", tramos: [{ e: "15:45", s: "20:16" }] },
+        "2026-02-26": { inc: "ausencia", tramos: [] },
+        "2026-02-27": { inc: "normal", tramos: [{ e: "15:40", s: "20:17" }] },
         "2026-02-28": { inc: "normal", tramos: [{ e: "08:10", s: "15:03" }] },
 
-        // MARZO
-        "2026-03-02": { inc: "normal", tramos: [{ e: "15:31", s: "20:15" }] }, "2026-03-03": { inc: "normal", tramos: [{ e: "15:29", s: "20:17" }] },
-        "2026-03-04": { inc: "normal", tramos: [{ e: "15:45", s: "20:16" }] }, "2026-03-05": { inc: "normal", tramos: [{ e: "15:35", s: "20:15" }] },
-        "2026-03-06": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] }, "2026-03-09": { inc: "normal", tramos: [{ e: "15:32", s: "20:35" }] },
-        "2026-03-10": { inc: "normal", tramos: [{ e: "15:36", s: "20:12" }] }, "2026-03-11": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-03-02": { inc: "normal", tramos: [{ e: "15:31", s: "20:15" }] },
+        "2026-03-03": { inc: "normal", tramos: [{ e: "15:29", s: "20:17" }] },
+        "2026-03-04": { inc: "normal", tramos: [{ e: "15:45", s: "20:16" }] },
+        "2026-03-05": { inc: "normal", tramos: [{ e: "15:35", s: "20:15" }] },
+        "2026-03-06": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] },
+        "2026-03-09": { inc: "normal", tramos: [{ e: "15:32", s: "20:35" }] },
+        "2026-03-10": { inc: "normal", tramos: [{ e: "15:36", s: "20:12" }] },
+        "2026-03-11": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
         "2026-03-12": { inc: "normal", tramos: [{ e: "10:22", s: "11:16" }, { e: "15:36", s: "20:16" }] },
-        "2026-03-13": { inc: "normal", tramos: [{ e: "15:47", s: "20:16" }] }, "2026-03-14": { inc: "normal", tramos: [{ e: "14:29", s: "19:11" }] },
+        "2026-03-13": { inc: "normal", tramos: [{ e: "15:47", s: "20:16" }] },
+        "2026-03-14": { inc: "normal", tramos: [{ e: "14:29", s: "19:11" }] },
         "2026-03-15": { inc: "normal", tramos: [{ e: "08:52", s: "14:20" }, { e: "17:57", s: "20:34" }] },
-        "2026-03-16": { inc: "normal", tramos: [{ e: "15:26", s: "20:15" }] }, "2026-03-17": { inc: "normal", tramos: [{ e: "15:34", s: "20:18" }] },
-        "2026-03-18": { inc: "ausencia", tramos: [] }, "2026-03-20": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
-        "2026-03-23": { inc: "normal", tramos: [{ e: "15:46", s: "20:09" }] }, "2026-03-24": { inc: "normal", tramos: [{ e: "15:45", s: "20:12" }] },
-        "2026-03-25": { inc: "normal", tramos: [{ e: "15:45", s: "20:09" }] }, "2026-03-26": { inc: "normal", tramos: [{ e: "15:47", s: "20:10" }] },
-        "2026-03-27": { inc: "normal", tramos: [{ e: "15:43", s: "20:12" }] }, "2026-03-30": { inc: "vacaciones", tramos: [] },
-        "2026-03-31": { inc: "vacaciones", tramos: [] },
+        "2026-03-16": { inc: "normal", tramos: [{ e: "15:26", s: "20:15" }] },
+        "2026-03-17": { inc: "normal", tramos: [{ e: "15:34", s: "20:18" }] },
+        "2026-03-18": { inc: "ausencia", tramos: [] },
+        "2026-03-20": { inc: "normal", tramos: [{ e: "15:45", s: "20:15" }] },
+        "2026-03-23": { inc: "normal", tramos: [{ e: "15:46", s: "20:09" }] },
+        "2026-03-24": { inc: "normal", tramos: [{ e: "15:45", s: "20:12" }] },
+        "2026-03-25": { inc: "normal", tramos: [{ e: "15:45", s: "20:09" }] },
+        "2026-03-26": { inc: "normal", tramos: [{ e: "15:47", s: "20:10" }] },
+        "2026-03-27": { inc: "normal", tramos: [{ e: "15:43", s: "20:12" }] },
 
-        // ABRIL
-        "2026-04-01": { inc: "vacaciones", tramos: [] }, "2026-04-06": { inc: "vacaciones", tramos: [] },
-        "2026-04-07": { inc: "normal", tramos: [{ e: "15:42", s: "20:14" }] }, "2026-04-08": { inc: "normal", tramos: [{ e: "15:45", s: "20:17" }] },
-        "2026-04-09": { inc: "normal", tramos: [{ e: "15:38", s: "20:13" }] }, "2026-04-10": { inc: "normal", tramos: [{ e: "15:45", s: "20:09" }] },
-        "2026-04-13": { inc: "normal", tramos: [{ e: "15:43", s: "20:14" }] }, "2026-04-14": { inc: "normal", tramos: [{ e: "15:43", s: "20:16" }] },
-        "2026-04-15": { inc: "normal", tramos: [{ e: "15:48", s: "20:17" }] }, "2026-04-16": { inc: "normal", tramos: [{ e: "15:45", s: "20:18" }] },
-        "2026-04-17": { inc: "normal", tramos: [{ e: "08:00", s: "13:36" }] }, "2026-04-20": { inc: "normal", tramos: [{ e: "15:37", s: "20:16" }] },
-        "2026-04-21": { inc: "normal", tramos: [{ e: "15:43", s: "20:18" }] }, "2026-04-22": { inc: "normal", tramos: [{ e: "15:33", s: "20:08" }] },
-        "2026-04-23": { inc: "normal", tramos: [{ e: "15:45", s: "20:43" }] }, "2026-04-24": { inc: "normal", tramos: [{ e: "15:42", s: "20:06" }] },
+        "2026-04-07": { inc: "normal", tramos: [{ e: "15:42", s: "20:14" }] },
+        "2026-04-08": { inc: "normal", tramos: [{ e: "15:45", s: "20:17" }] },
+        "2026-04-09": { inc: "normal", tramos: [{ e: "15:38", s: "20:13" }] },
+        "2026-04-10": { inc: "normal", tramos: [{ e: "15:45", s: "20:09" }] },
+        "2026-04-13": { inc: "normal", tramos: [{ e: "15:43", s: "20:14" }] },
+        "2026-04-14": { inc: "normal", tramos: [{ e: "15:43", s: "20:16" }] },
+        "2026-04-15": { inc: "normal", tramos: [{ e: "15:48", s: "20:17" }] },
+        "2026-04-16": { inc: "normal", tramos: [{ e: "15:45", s: "20:18" }] },
+        "2026-04-17": { inc: "normal", tramos: [{ e: "08:00", s: "13:36" }] },
+        "2026-04-20": { inc: "normal", tramos: [{ e: "15:37", s: "20:16" }] },
+        "2026-04-21": { inc: "normal", tramos: [{ e: "15:43", s: "20:18" }] },
+        "2026-04-22": { inc: "normal", tramos: [{ e: "15:33", s: "20:08" }] },
+        "2026-04-23": { inc: "normal", tramos: [{ e: "15:45", s: "20:43" }] },
+        "2026-04-24": { inc: "normal", tramos: [{ e: "15:42", s: "20:06" }] },
         "2026-04-27": { inc: "normal", tramos: [{ e: "15:45", s: "20:19" }] },
         "2026-04-28": { inc: "normal", tramos: [{ e: "09:35", s: "10:05" }, { e: "15:45", s: "20:15" }] },
-        "2026-04-29": { inc: "normal", tramos: [{ e: "15:38", s: "20:10" }] }, "2026-04-30": { inc: "vacaciones", tramos: [] },
+        "2026-04-29": { inc: "normal", tramos: [{ e: "15:38", s: "20:10" }] },
 
-        // MAYO
-        "2026-05-05": { inc: "vacaciones", tramos: [] }, "2026-05-06": { inc: "normal", tramos: [{ e: "15:38", s: "20:26" }] },
-        "2026-05-07": { inc: "normal", tramos: [{ e: "15:28", s: "20:15" }] }, "2026-05-08": { inc: "normal", tramos: [{ e: "15:39", s: "20:17" }] },
-        "2026-05-11": { inc: "normal", tramos: [{ e: "15:44", s: "20:19" }] }, "2026-05-12": { inc: "normal", tramos: [{ e: "15:38", s: "20:17" }] },
-        "2026-05-13": { inc: "normal", tramos: [{ e: "15:49", s: "20:14" }] }, "2026-05-14": { inc: "normal", tramos: [{ e: "15:42", s: "20:27" }] },
-        "2026-05-15": { inc: "normal", tramos: [{ e: "15:47", s: "20:30" }] }, "2026-05-18": { inc: "normal", tramos: [{ e: "15:44", s: "20:15" }] },
-        "2026-05-19": { inc: "normal", tramos: [{ e: "15:22", s: "20:16" }] }, "2026-05-20": { inc: "normal", tramos: [{ e: "15:39", s: "20:10" }] },
+        "2026-05-06": { inc: "normal", tramos: [{ e: "15:38", s: "20:26" }] },
+        "2026-05-07": { inc: "normal", tramos: [{ e: "15:28", s: "20:15" }] },
+        "2026-05-08": { inc: "normal", tramos: [{ e: "15:39", s: "20:17" }] },
+        "2026-05-11": { inc: "normal", tramos: [{ e: "15:44", s: "20:19" }] },
+        "2026-05-12": { inc: "normal", tramos: [{ e: "15:38", s: "20:17" }] },
+        "2026-05-13": { inc: "normal", tramos: [{ e: "15:49", s: "20:14" }] },
+        "2026-05-14": { inc: "normal", tramos: [{ e: "15:42", s: "20:27" }] },
+        "2026-05-15": { inc: "normal", tramos: [{ e: "15:47", s: "20:30" }] },
+        "2026-05-18": { inc: "normal", tramos: [{ e: "15:44", s: "20:15" }] },
+        "2026-05-19": { inc: "normal", tramos: [{ e: "15:22", s: "20:16" }] },
+        "2026-05-20": { inc: "normal", tramos: [{ e: "15:39", s: "20:10" }] },
         "2026-05-21": { inc: "normal", tramos: [{ e: "12:31", s: "14:28" }, { e: "15:42", s: "21:15" }] },
-        "2026-05-22": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] }, "2026-05-25": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] },
-        "2026-05-26": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] }, "2026-05-27": { inc: "normal", tramos: [{ e: "15:35", s: "20:14" }] },
-        "2026-05-28": { inc: "normal", tramos: [{ e: "15:44", s: "20:34" }] }, "2026-05-29": { inc: "normal", tramos: [{ e: "15:42", s: "20:34" }] },
+        "2026-05-22": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] },
+        "2026-05-25": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] },
+        "2026-05-26": { inc: "normal", tramos: [{ e: "08:00", s: "13:30" }] },
+        "2026-05-27": { inc: "normal", tramos: [{ e: "15:35", s: "20:14" }] },
+        "2026-05-28": { inc: "normal", tramos: [{ e: "15:44", s: "20:34" }] },
+        "2026-05-29": { inc: "normal", tramos: [{ e: "15:42", s: "20:34" }] },
         "2026-05-30": { inc: "normal", tramos: [{ e: "08:31", s: "18:06" }] },
 
-        // JUNIO
         "2026-06-01": { inc: "normal", tramos: [{ e: "09:08", s: "11:48" }, { e: "15:40", s: "20:14" }] },
         "2026-06-02": { inc: "normal", tramos: [{ e: "08:32", s: "13:20" }, { e: "15:40", s: "20:12" }] },
-        "2026-06-03": { inc: "normal", tramos: [{ e: "15:41", s: "20:21" }] }, "2026-06-04": { inc: "normal", tramos: [{ e: "15:44", s: "20:32" }] },
-        "2026-06-05": { inc: "ausencia", tramos: [] }, "2026-06-06": { inc: "normal", tramos: [{ e: "14:34", s: "21:10" }] },
-        "2026-06-07": { inc: "normal", tramos: [{ e: "14:19", s: "21:13" }] }, "2026-06-08": { inc: "ausencia", tramos: [] },
+        "2026-06-03": { inc: "normal", tramos: [{ e: "15:41", s: "20:21" }] },
+        "2026-06-04": { inc: "normal", tramos: [{ e: "15:44", s: "20:32" }] },
+        "2026-06-05": { inc: "ausencia", tramos: [] },
+        "2026-06-06": { inc: "normal", tramos: [{ e: "14:34", s: "21:10" }] },
+        "2026-06-07": { inc: "normal", tramos: [{ e: "14:19", s: "21:13" }] },
+        "2026-06-08": { inc: "ausencia", tramos: [] },
         "2026-06-10": { inc: "normal", tramos: [{ e: "10:28", s: "15:07" }, { e: "15:23", s: "17:46" }, { e: "18:53", s: "21:47" }] },
         "2026-06-11": { inc: "normal", tramos: [{ e: "08:49", s: "12:03" }, { e: "16:23", s: "21:06" }] },
-        "2026-06-12": { inc: "ausencia", tramos: [] }, "2026-06-13": { inc: "normal", tramos: [{ e: "14:26", s: "20:56" }] },
-        "2026-06-14": { inc: "normal", tramos: [{ e: "10:56", s: "15:48" }] }, "2026-06-15": { inc: "normal", tramos: [{ e: "13:58", s: "19:59" }] },
+        "2026-06-12": { inc: "ausencia", tramos: [] },
+        "2026-06-13": { inc: "normal", tramos: [{ e: "14:26", s: "20:56" }] },
+        "2026-06-14": { inc: "normal", tramos: [{ e: "10:56", s: "15:48" }] },
+        "2026-06-15": { inc: "normal", tramos: [{ e: "13:58", s: "19:59" }] },
         "2026-06-16": { inc: "normal", tramos: [{ e: "10:05", s: "13:22" }, { e: "16:05", s: "20:03" }] },
         "2026-06-17": { inc: "normal", tramos: [{ e: "10:15", s: "12:28" }, { e: "15:11", s: "20:24" }] },
         "2026-06-18": { inc: "normal", tramos: [{ e: "08:53", s: "13:46" }, { e: "15:01", s: "19:44" }] },
         "2026-06-19": { inc: "normal", tramos: [{ e: "14:06", s: "19:01" }] },
         "2026-06-22": { inc: "normal", tramos: [{ e: "10:14", s: "14:35" }, { e: "15:45", s: "20:52" }] },
         "2026-06-23": { inc: "normal", tramos: [{ e: "09:57", s: "13:08" }, { e: "16:10", s: "20:50" }] },
-        "2026-06-24": { inc: "normal", tramos: 
+        "2026-06-24": { inc: "normal", tramos: [{ e: "09:58", s: "13:11" }, { e: "17:40", s: "21:23" }] },
+        "2026-06-25": { inc: "normal", tramos: [{ e: "10:18", s: "14:16" }, { e: "16:29", s: "20:33" }] },
+        "2026-06-26": { inc: "ausencia", tramos: [] },
+        "2026-06-27": { inc: "normal", tramos: [{ e: "11:02", s: "19:39" }] },
+        "2026-06-28": { inc: "normal", tramos: [{ e: "10:48", s: "15:39" }] },
+        "2026-06-29": { inc: "normal", tramos: [{ e: "10:06", s: "14:39" }] },
+        "2026-06-30": { inc: "normal", tramos: [{ e: "10:37", s: "14:12" }] },
+
+        "2026-07-01": { inc: "normal", tramos: [{ e: "10:10", s: "14:33" }, { e: "16:13", s: "21:06" }] },
+        "2026-07-02": { inc: "normal", tramos: [{ e: "10:48", s: "14:08" }, { e: "15:40", s: "21:09" }] },
+        "2026-07-03": { inc: "ausencia", tramos: [] },
+        "2026-07-04": { inc: "normal", tramos: [{ e: "10:14", s: "15:15" }] },
+        "2026-07-05": { inc: "normal", tramos: [{ e: "10:59", s: "15:17" }] },
+        "2026-07-06": { inc: "normal", tramos: [{ e: "14:55", s: "19:00" }] },
+        "2026-07-07": { inc: "normal", tramos: [{ e: "09:51", s: "14:12" }] },
+        "2026-07-08": { inc: "normal", tramos: [{ e: "10:14", s: "14:01" }, { e: "15:59", s: "21:08" }] },
+        "2026-07-09": { inc: "normal", tramos: [{ e: "10:17", s: "14:27" }, { e: "18:00", s: "23:31" }] },
+        "2026-07-10": { inc: "ausencia", tramos: [] },
+        "2026-07-11": { inc: "normal", tramos: [{ e: "10:43", s: "15:33" }] },
+        "2026-07-12": { inc: "normal", tramos: [{ e: "10:58", s: "15:28" }] },
+        "2026-07-13": { inc: "normal", tramos: [{ e: "10:23", s: "17:59" }] },
+        "2026-07-14": { inc: "normal", tramos: [{ e: "10:09", s: "14:18" }] },
+        "2026-07-15": { inc: "normal", tramos: [{ e: "10:35", s: "14:09" }, { e: "15:40", s: "20:53" }] },
+        "2026-07-16": { inc: "normal", tramos: [{ e: "10:08", s: "15:00" }, { e: "16:09", s: "21:17" }] },
+        "2026-07-17": { inc: "normal", tramos: [{ e: "14:28", s: "20:27" }] },
+        "2026-07-20": { inc: "normal", tramos: [{ e: "09:59", s: "14:22" }] },
+        "2026-07-21": { inc: "normal", tramos: [{ e: "10:30", s: "14:07" }] },
+        "2026-07-22": { inc: "normal", tramos: [{ e: "10:08", s: "14:37" }, { e: "16:20", s: "21:56" }] },
+        "2026-07-23": { inc: "normal", tramos: [{ e: "10:21", s: "14:53" }, { e: "15:41", s: "21:41" }] },
+        "2026-07-24": { inc: "ausencia", tramos: [] },
+        "2026-07-25": { inc: "normal", tramos: [{ e: "10:51", s: "15:29" }] },
+        "2026-07-26": { inc: "normal", tramos: [{ e: "15:13", s: "20:58" }] },
+        "2026-07-27": { inc: "normal", tramos: [{ e: "10:14", s: "14:30" }] },
+        "2026-07-28": { inc: "normal", tramos: [{ e: "10:18", s: "14:33" }] },
+        "2026-07-29": { inc: "normal", tramos: [{ e: "10:02", s: "14:10" }, { e: "15:54", s: "21:08" }] },
+        "2026-07-30": { inc: "normal", tramos: [{ e: "10:13", s: "14:21" }, { e: "16:53", s: "21:32" }] },
+        "2026-07-31": { inc: "normal", tramos: [{ e: "11:12", s: "20:02" }] },
+
+        "2026-08-24": { inc: "normal", tramos: [{ e: "11:43", s: "20:16" }] },
+        "2026-08-25": { inc: "ausencia", tramos: [] },
+        "2026-08-26": { inc: "ausencia", tramos: [] },
+        "2026-08-27": { inc: "normal", tramos: [{ e: "11:55", s: "20:15" }] },
+        "2026-08-28": { inc: "normal", tramos: [{ e: "11:37", s: "19:50" }] },
+        "2026-08-29": { inc: "normal", tramos: [{ e: "10:58", s: "19:53" }] },
+        "2026-08-30": { inc: "normal", tramos: [{ e: "11:03", s: "19:56" }] },
+        "2026-08-31": { inc: "normal", tramos: [{ e: "11:49", s: "20:10" }] },
+
+        "2026-09-01": { inc: "normal", tramos: [{ e: "11:28", s: "20:03" }] },
+        "2026-09-02": { inc: "normal", tramos: [{ e: "11:44", s: "20:02" }] },
+        "2026-09-03": { inc: "normal", tramos: [{ e: "11:40", s: "20:04" }] },
+        "2026-09-04": { inc: "ausencia", tramos: [] },
+        "2026-09-07": { inc: "normal", tramos: [{ e: "08:02", s: "15:00" }] },
+        "2026-09-08": { inc: "normal", tramos: [{ e: "09:45", s: "13:39" }, { e: "15:46", s: "20:15" }] },
+        "2026-09-09": { inc: "normal", tramos: [{ e: "15:46", s: "20:30" }] }
+    };
+
+    var STORAGE_KEY = "control_jornada_v15_resilient";
+
+    function cargarDB() {
+        try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch(e) {}
+        return JSON.parse(JSON.stringify(baseHistorica));
+    }
+
+    var db = cargarDB();
+
+    function obtenerFechaHoyISO() {
+        var d = new Date();
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    }
+
+    var fechaActual = obtenerFechaHoyISO();
+    var partesHoy = fechaActual.split('-');
+    var mesVerAño = parseInt(partesHoy[0], 10);
+    var mesVerMes = parseInt(partesHoy[1], 10) - 1;
+
+    function guardarDB() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch(e) {}
+    }
+
+    function calcMin(e, s) {
+        if (!e || !s) return 0;
+        var p1 = e.split(':').map(Number);
+        var p2 = s.split(':').map(Number);
+        return (p2[0] * 60 + p2[1]) - (p1[0] * 60 + p1[1]);
+    }
+
+    function calcMinDia(fecha) {
+        var d = db[fecha];
+        if (!d || d.inc !== 'normal' || !d.tramos) return 0;
+        var total = 0;
+        for (var i = 0; i < d.tramos.length; i++) {
+            total += calcMin(d.tramos[i].e, d.tramos[i].s);
+        }
+        return total;
+    }
+
+    function fmtMin(m, signo) {
+        var neg = m < 0;
+        var abs = Math.abs(Math.round(m));
+        var h = Math.floor(abs / 60);
+        var min = abs % 60;
+        var s = neg ? '-' : (signo ? '+' : '');
+        return s + h + 'h ' + String(min).padStart(2, '0') + 'm';
+    }
+
+    function fmtHoras(m) {
+        var neg = m < 0;
+        var abs = Math.abs(Math.round(m));
+        var h = Math.floor(abs / 60);
+        var min = abs % 60;
+        return (neg ? '-' : '') + h + ':' + String(min).padStart(2, '0');
+    }
+
+    function obtenerLunes(fechaStr) {
+        var p = fechaStr.split('-').map(Number);
+        var date = new Date(p[0], p[1] - 1, p[2]);
+        var dia = date.getDay();
+        var diff = dia === 0 ? -6 : 1 - dia;
+        date.setDate(date.getDate() + diff);
+        return date;
+    }
+
+    function renderDia() {
+        var inputF = document.getElementById('fechaSel');
+        if (inputF) inputF.value = fechaActual;
+        var d = db[fechaActual] || { inc: 'normal', tramos: [] };
+        
+        ['btnNormal', 'btnLibre', 'btnVac', 'btnAus'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove('active');
+        });
+        if (d.inc === 'normal') document.getElementById('btnNormal').classList.add('active');
+        if (d.inc === 'libre') document.getElementById('btnLibre').classList.add('active');
+        if (d.inc === 'vacaciones') document.getElementById('btnVac').classList.add('active');
+        if (d.inc === 'ausencia') document.getElementById('btnAus').classList.add('active');
+
+        var lista = document.getElementById('tramosLista');
+        lista.innerHTML = '';
+
+        if (d.inc === 'normal') {
+            document.getElementById('btnAdd').style.display = 'block';
+            if (d.tramos) {
+                d.tramos.forEach(function(t, i) {
+                    var row = document.createElement('div');
+                    row.className = 'tramo';
+                    row.innerHTML = 
+                        '<input type="time" value="' + t.e + '" onchange="updTramo(' + i + ', \'e\', this.value)">' +
+                        '<span style="color:var(--muted); font-size:0.8rem;">a</span>' +
+                        '<input type="time" value="' + t.s + '" onchange="updTramo(' + i + ', \'s\', this.value)">' +
+                        '<button class="btn-del" onclick="delTramo(' + i + ')">✕</button>';
+                    lista.appendChild(row);
+                });
+            }
+        } else {
+            document.getElementById('btnAdd').style.display = 'none';
+            var txt = d.inc === 'vacaciones' ? '🌴 Vacaciones' : (d.inc === 'libre' ? '💤 Compensado' : '⚠️ Falta S004 (-07:00)');
+            lista.innerHTML = '<div style="text-align:center; padding:12px; color:var(--muted); font-size:0.85rem;">' + txt + '</div>';
+        }
+
+        var totalMin = calcMinDia(fechaActual);
+        document.getElementById('diaHorasTotal').textContent = fmtMin(totalMin, false);
+    }
+
+    function renderSemana() {
+        var lunes = obtenerLunes(fechaActual);
+        var nombresDias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        var totalSemana = 0;
+        var cont = document.getElementById('semanaDiasDesglose');
+        cont.innerHTML = '';
+
+        var domingo = new Date(lunes);
+        domingo.setDate(lunes.getDate() + 6);
+        document.getElementById('tituloTermometro').textContent = 'Semana (' + lunes.getDate() + '/' + (lunes.getMonth()+1) + ' - ' + domingo.getDate() + '/' + (domingo.getMonth()+1) + ')';
+
+        for (var i = 0; i < 7; i++) {
+            var cur = new Date(lunes);
+            cur.setDate(lunes.getDate() + i);
+            var y = cur.getFullYear();
+            var m = String(cur.getMonth() + 1).padStart(2, '0');
+            var day = String(cur.getDate()).padStart(2, '0');
+            var k = y + '-' + m + '-' + day;
+
+            var minutosDia = calcMinDia(k);
+            totalSemana += minutosDia;
+
+            var d = db[k];
+            var sub = 'Sin actividad';
+            if (d && d.inc === 'normal' && d.tramos && d.tramos.length > 0) {
+                sub = d.tramos.map(function(t){ return t.e + '-' + t.s; }).join(', ');
+            } else if (d && d.inc !== 'normal') {
+                sub = d.inc === 'ausencia' ? '⚠️ S004' : (d.inc === 'vacaciones' ? '🌴 Vacaciones' : '💤 Compensado');
+            }
+
+            var row = document.createElement('div');
+            row.className = 'day-row';
+            row.style.cursor = 'pointer';
+            if (k === fechaActual) row.style.color = 'var(--accent)';
+            row.setAttribute('data-fecha', k);
+            row.onclick = (function(fechaTarget) {
+                return function() {
+                    fechaActual = fechaTarget;
+                    renderTodo();
+                };
+            })(k);
+
+            row.innerHTML = 
+                '<div>' +
+                    '<div style="font-weight:600;">' + nombresDias[i] + ' (' + cur.getDate() + ')</div>' +
+                    '<div style="font-size:0.75rem; color:var(--muted);">' + sub + '</div>' +
+                '</div>' +
+                '<div style="font-weight:700;">' + fmtMin(minutosDia, false) + '</div>';
+            cont.appendChild(row);
+        }
+
+        var pct = Math.min(100, Math.round((totalSemana / (35 * 60)) * 100));
+        document.getElementById('pBar').style.width = pct + '%';
+        document.getElementById('pTxt').textContent = pct + '% (' + fmtMin(totalSemana, false) + ' / 35h)';
+
+        var rest = (35 * 60) - totalSemana;
+        var estadoTxt = document.getElementById('semanaEstadoTxt');
+        if (rest <= 0) {
+            estadoTxt.textContent = '¡Cubierto! (+' + fmtMin(Math.abs(rest), false) + ')';
+            estadoTxt.style.color = 'var(--success)';
+        } else {
+            estadoTxt.textContent = fmtMin(rest, false) + ' para 35h';
+            estadoTxt.style.color = 'var(--accent)';
+        }
+    }
+
+    function renderBolsa() {
+        var extraMinutos = 0;
+        Object.keys(db).forEach(function(k) {
+            if (k >= "2026-09-10") {
+                var fichado = calcMinDia(k);
+                var p = k.split('-').map(Number);
+                var diaSem = new Date(p[0], p[1] - 1, p[2]).getDay();
+                var teorico = (diaSem >= 1 && diaSem <= 5) ? (7 * 60) : 0;
+                if (db[k].inc === 'vacaciones' || db[k].inc === 'libre') teorico = 0;
+                extraMinutos += (fichado - teorico);
+            }
+        });
+
+        var saldoFinal = SALDO_BASE_MINUTOS + extraMinutos;
+        var elem = document.getElementById('totalBolsa');
+        elem.textContent = fmtHoras(saldoFinal);
+        elem.style.color = saldoFinal >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    function renderMeses() {
+        var meses = [
+            { n: "Enero 2026", f: "75:57", t: "95:12", s: "-19:15" },
+            { n: "Febrero 2026", f: "117:05", t: "112:00", s: "+05:05" },
+            { n: "Marzo 2026", f: "96:17", t: "106:24", s: "-10:07" },
+            { n: "Abril 2026", f: "79:02", t: "89:12", s: "-10:10" },
+            { n: "Mayo 2026", f: "99:08", t: "100:48", s: "-01:40" },
+            { n: "Junio 2026", f: "149:58", t: "147:00", s: "+02:58" },
+            { n: "Julio 2026", f: "175:12", t: "161:00", s: "+14:12" },
+            { n: "Agosto 2026", f: "51:15", t: "42:00", s: "+09:15" },
+            { n: "Septiembre 2026", f: "45:16", t: "49:00", s: "-03:44" }
+        ];
+        var tbody = document.getElementById('tablaMesesBody');
+        tbody.innerHTML = '';
+        meses.forEach(function(m) {
+            var color = m.s.indexOf('+') !== -1 ? 'var(--success)' : 'var(--danger)';
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + m.n + '</td><td class="text-r">' + m.f + '</td><td class="text-r">' + m.t + '</td><td class="text-r" style="color:' + color + '; font-weight:600;">' + m.s + '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderHistorial() {
+        var nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        document.getElementById('mesHistorialTxt').textContent = nombresMeses[mesVerMes] + ' ' + mesVerAño;
+        var tbody = document.getElementById('tablaDiarioBody');
+        tbody.innerHTML = '';
+
+        var prefix = mesVerAño + '-' + String(mesVerMes + 1).padStart(2, '0');
+        var keys = Object.keys(db).filter(function(k) { return k.indexOf(prefix) === 0; }).sort();
+
+        if (keys.length > 0) {
+            keys.forEach(function(k) {
+                var dia = parseInt(k.split('-')[2], 10);
+                var d = db[k];
+                var desc = '-';
+                if (d.inc === 'normal' && d.tramos && d.tramos.length > 0) {
+                    desc = d.tramos.map(function(t){ return t.e + '-' + t.s; }).join(', ');
+                } else if (d.inc === 'ausencia') desc = 'Ausencia S004';
+                else if (d.inc === 'vacaciones') desc = 'Vacaciones';
+                else if (d.inc === 'libre') desc = 'Compensado';
+
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td><strong>' + dia + '</strong></td><td style="font-size:0.75rem; color:var(--muted);">' + desc + '</td><td class="text-r" style="font-weight:600;">' + fmtMin(calcMinDia(k), false) + '</td>';
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--muted); padding:10px;">Sin registros en este mes</td></tr>';
+        }
+    }
+
+    function toggleAcc(idContent, idArr) {
+        var el = document.getElementById(idContent);
+        var arr = document.getElementById(idArr);
+        if (el && arr) {
+            el.classList.toggle('open');
+            arr.classList.toggle('open');
+        }
+    }
+
+    function seleccionarFecha() {
+        fechaActual = document.getElementById('fechaSel').value;
+        var p = fechaActual.split('-').map(Number);
+        mesVerAño = p[0];
+        mesVerMes = p[1] - 1;
+        renderTodo();
+    }
+
+    function irAHoy() {
+        fechaActual = obtenerFechaHoyISO();
+        var p = fechaActual.split('-').map(Number);
+        mesVerAño = p[0];
+        mesVerMes = p[1] - 1;
+        renderTodo();
+    }
+
+    function nuevoTramo() {
+        if (!db[fechaActual]) db[fechaActual] = { inc: 'normal', tramos: [] };
+        if (!db[fechaActual].tramos) db[fechaActual].tramos = [];
+        
+        var eDef = "15:45", sDef = "20:15";
+        if (fechaActual === obtenerFechaHoyISO()) {
+            var now = new Date();
+            eDef = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            var fin = new Date(now.getTime() + 4 * 3600 * 1000);
+            sDef = String(fin.getHours()).padStart(2, '0') + ':' + String(fin.getMinutes()).padStart(2, '0');
+        }
+
+        db[fechaActual].tramos.push({ e: eDef, s: sDef });
+        guardarDB();
+        renderTodo();
+    }
+
+    function updTramo(idx, campo, val) {
+        if (db[fechaActual] && db[fechaActual].tramos && db[fechaActual].tramos[idx]) {
+            db[fechaActual].tramos[idx][campo] = val;
+            guardarDB();
+            renderTodo();
+        }
+    }
+
+    function delTramo(idx) {
+        if (db[fechaActual] && db[fechaActual].tramos) {
+            db[fechaActual].tramos.splice(idx, 1);
+            guardarDB();
+            renderTodo();
+        }
+    }
+
+    function setIncidencia(tipo) {
+        if (!db[fechaActual]) db[fechaActual] = { inc: tipo, tramos: [] };
+        else db[fechaActual].inc = tipo;
+        guardarDB();
+        renderTodo();
+    }
+
+    function cambiarMes(delta) {
+        mesVerMes += delta;
+        if (mesVerMes < 0) { mesVerMes = 11; mesVerAño--; }
+        if (mesVerMes > 11) { mesVerMes = 0; mesVerAño++; }
+        renderHistorial();
+    }
+
+    function renderTodo() {
+        renderDia();
+        renderSemana();
+        renderBolsa();
+        renderMeses();
+        renderHistorial();
+    }
+
+    window.onload = function() {
+        irAHoy();
+    };
+</script>
+</body>
+</html>
